@@ -64,7 +64,7 @@ int main()
 
     // jacobi interation
     int itc = 0;
-    double error, tmp;
+    double error;
     double error_max = 1.0;
     while (error_max > tolerance && itc < itc_max)
     {

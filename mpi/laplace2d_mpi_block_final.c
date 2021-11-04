@@ -64,34 +64,11 @@ int main()
 
     // jacobi interation
     int itc = 0;
-    double error, tmp;
+    double error;
     double error_max = 1.0;
     while (error_max > tolerance && itc < itc_max)
     {
         error = jacobi(A, A_new, nx, ny);
-        // if (rank == 0)
-        // {
-        //     // exchange message with bottom --- send then receive
-        //     // message tag 0 - message from/to top ; 1 - message from/to bottom
-        //     MPI_Send(A + (ny-2) * nx, nx, MPI_DOUBLE, 1, 1, MPI_COMM_WORLD);
-        //     MPI_Recv(A + (ny-1) * nx, nx, MPI_DOUBLE, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        // }
-        // else if (rank == num_process - 1)
-        // {
-        //     // exchange message with top --- receive then send
-        //     MPI_Recv(A, nx, MPI_DOUBLE, num_process-2, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        //     MPI_Send(A+nx, nx, MPI_DOUBLE, num_process-2, 0, MPI_COMM_WORLD);
-        // }
-        // else
-        // {
-        //     // exchange message with top --- receive then send
-        //     MPI_Recv(A, nx, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        //     MPI_Send(A + nx, nx, MPI_DOUBLE, rank-1, 0, MPI_COMM_WORLD);
-
-        //     // exchange message with bottom --- send then receive
-        //     MPI_Send(A + (ny-2)*nx, nx, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD);
-        //     MPI_Recv(A + (ny-1)*nx, nx, MPI_DOUBLE, rank+1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        // }
 
         if(rank > 0)
         {

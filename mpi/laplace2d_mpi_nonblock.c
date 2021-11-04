@@ -31,8 +31,14 @@ int main()
     MPI_Get_processor_name(processor_name, &name_len);
 
     // divide by row
+    int height = total_ny / num_process + 2;
+    if (rank == 0 || rank == num_process-1) // only have one boundary
+    {
+        height = total_ny / num_process + 1;
+    }
+
     const int nx = total_nx;
-    const int ny = total_ny / num_process + 2;
+    const int ny = height;
     
     double * A = (double *)malloc(sizeof(double) * nx * ny);
     double * A_new = (double *)malloc(sizeof(double) * nx * ny);
@@ -42,7 +48,7 @@ int main()
     memset(A_new, 0, nx * ny * sizeof(double));
     if(rank == 0)
     {
-        for (int i = 0; i < 2 * nx; i++)
+        for (int i = 0; i < nx; i++)
         {
             A[i] = 1.0;
             A_new[i] = 1.0;
@@ -61,8 +67,11 @@ int main()
     while (error_max > tolerance && itc < itc_max)
     {
         error = 0.0;
+        MPI_Request reqts, reqtr, reqbs, reqbr;
         if (rank == 0)
         {
+            // receive message from top
+            MPI_Irecv(A_new + (ny-1) * nx, nx, MPI_DOUBLE, 1, 0, MPI_COMM_WORLD, &reqbr);
             for (int i = ny-2, j = 1; j < nx-1; j++)
             {
                 A_new[index(i, j, nx)] = 0.25 * (A[index(i-1, j, nx)] + A[index(i+1, j, nx)]
@@ -71,20 +80,13 @@ int main()
                 error = error > tmp ? error : tmp;
             }
 
-            for (int i = ny-2, j = 1; j < nx-1; j++)
-            {
-                A[index(i, j, nx)] = A_new[index(i, j, nx)];
-            }
+            // send message to bottom
+            // message tag 0 - message from/to top ; 1 - message from/to bottom 
+            // message tag top/bottom for sender
+            MPI_Isend(A_new + (ny-2) * nx, nx, MPI_DOUBLE, 1, 1, MPI_COMM_WORLD, &reqbs);
 
-            // exchange message with bottom
-            // message tag 0 - message from/to top ; 1 - message from/to bottom
-            MPI_Request  reqbs,  reqbr;
-            MPI_Isend(A + (ny-2) * nx, nx, MPI_DOUBLE, 1, 1, MPI_COMM_WORLD, &reqbs);
-            MPI_Irecv(A + (ny-1) * nx, nx, MPI_DOUBLE, 1, 0, MPI_COMM_WORLD, &reqbr);
-            // MPI_Wait(&reqbs, MPI_STATUS_IGNORE);
-            // MPI_Wait(&reqbr, MPI_STATUS_IGNORE);  
 
-            for (int i = 2; i < ny-2; i++)
+            for (int i = 1; i < ny-2; i++)
             {
                 for (int j = 1; j < nx-1; j++)
                 {
@@ -95,18 +97,13 @@ int main()
                 }
             }
 
-            for (int i = 2; i < ny-2; i++)
-            {
-                for (int j = 1; j < nx-1; j++)
-                {
-                    A[index(i, j, nx)] = A_new[index(i, j, nx)];
-                }
-            }         
             MPI_Wait(&reqbs, MPI_STATUS_IGNORE);
-            MPI_Wait(&reqbr, MPI_STATUS_IGNORE);   
+            MPI_Wait(&reqbr, MPI_STATUS_IGNORE);          
         }
         else if (rank == num_process - 1)
         {
+            // receive message from bottom
+            MPI_Irecv(A_new, nx, MPI_DOUBLE, num_process-2, 1, MPI_COMM_WORLD, &reqtr);
             for (int i = 1, j = 1; j < nx-1; j++)
             {
                 A_new[index(i, j, nx)] = 0.25 * (A[index(i-1, j, nx)] + A[index(i+1, j, nx)]
@@ -115,19 +112,11 @@ int main()
                 error = error > tmp ? error : tmp;
             }
 
-            for (int i = 1, j = 1; j < nx-1; j++)
-            {
-                A[index(i, j, nx)] = A_new[index(i, j, nx)];
-            }
+            // send message to top
+            MPI_Isend(A_new + nx, nx, MPI_DOUBLE, num_process-2, 0, MPI_COMM_WORLD, &reqts);
+            
 
-            // exchange message with top
-            MPI_Request  reqts,  reqtr;
-            MPI_Isend(A+nx, nx, MPI_DOUBLE, num_process-2, 0, MPI_COMM_WORLD, &reqts);
-            MPI_Irecv(A, nx, MPI_DOUBLE, num_process-2, 1, MPI_COMM_WORLD, &reqtr);
-            // MPI_Wait(&reqts, MPI_STATUS_IGNORE);
-            // MPI_Wait(&reqtr, MPI_STATUS_IGNORE);
-
-            for (int i = 2; i < ny-2; i++)
+            for (int i = 2; i < ny-1; i++)
             {
                 for (int j = 1; j < nx-1; j++)
                 {
@@ -135,14 +124,6 @@ int main()
                                                     + A[index(i, j-1, nx)] + A[index(i, j+1, nx)]);
                     tmp = fabs(A_new[index(i, j, nx)] - A[index(i, j, nx)]);
                     error = error > tmp ? error : tmp;
-                }
-            }
-
-            for (int i = 2; i < ny-2; i++)
-            {
-                for (int j = 1; j < nx-1; j++)
-                {
-                    A[index(i, j, nx)] = A_new[index(i, j, nx)];
                 }
             }
 
@@ -151,6 +132,10 @@ int main()
         }
         else
         {
+            /* receive message first */
+            MPI_Irecv(A_new, nx, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, &reqtr);
+            MPI_Irecv(A_new + (ny-1)*nx, nx, MPI_DOUBLE, rank+1, 0, MPI_COMM_WORLD, &reqbr);
+
             /* top row */
             for (int i = 1, j = 1; j < nx-1; j++)
             {
@@ -160,18 +145,9 @@ int main()
                 error = error > tmp ? error : tmp;
             }
 
-            for (int i = 1, j = 1; j < nx-1; j++)
-            {
-                A[index(i, j, nx)] = A_new[index(i, j, nx)];
-            }
-
-            /* exchange message with top */
-            MPI_Request  reqts,  reqtr;
-            MPI_Isend(A + nx, nx, MPI_DOUBLE, rank-1, 0, MPI_COMM_WORLD, &reqts);
-            MPI_Irecv(A, nx, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, &reqtr);
-            // MPI_Wait(&reqts, MPI_STATUS_IGNORE);
-            // MPI_Wait(&reqtr, MPI_STATUS_IGNORE);
-
+            /* send message to top */
+            MPI_Isend(A_new + nx, nx, MPI_DOUBLE, rank-1, 0, MPI_COMM_WORLD, &reqts);
+            
 
             /* bottom row */
             for (int i = ny-2, j = 1; j < nx-1; j++)
@@ -182,17 +158,9 @@ int main()
                 error = error > tmp ? error : tmp;
             }
 
-            for (int i = ny-2, j = 1; j < nx-1; j++)
-            {
-                A[index(i, j, nx)] = A_new[index(i, j, nx)];
-            }
+            /* send message to bottom */
+            MPI_Isend(A_new + (ny-2)*nx, nx, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD, &reqbs);
 
-            /* exchange message with bottom */
-            MPI_Request  reqbs,  reqbr;
-            MPI_Isend(A + (ny-2)*nx, nx, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD, &reqbs);
-            MPI_Irecv(A + (ny-1)*nx, nx, MPI_DOUBLE, rank+1, 0, MPI_COMM_WORLD, &reqbr);
-            // MPI_Wait(&reqbs, MPI_STATUS_IGNORE);
-            // MPI_Wait(&reqbr, MPI_STATUS_IGNORE);
 
             /* middle rows */
             for (int i = 2; i < ny-2; i++)
@@ -206,19 +174,19 @@ int main()
                 }
             }
 
-            for (int i = 2; i < ny-2; i++)
-            {
-                for (int j = 1; j < nx-1; j++)
-                {
-                    A[index(i, j, nx)] = A_new[index(i, j, nx)];
-                }
-            }
-
             MPI_Wait(&reqts, MPI_STATUS_IGNORE);
             MPI_Wait(&reqtr, MPI_STATUS_IGNORE);
             MPI_Wait(&reqbs, MPI_STATUS_IGNORE);
             MPI_Wait(&reqbr, MPI_STATUS_IGNORE);
         }
+
+        for (int i = 1; i < ny-1; i++)
+        {
+            for (int j = 1; j < nx-1; j++)
+            {
+                A[index(i, j, nx)] = A_new[index(i, j, nx)];
+            }
+        }  
 
         MPI_Barrier(MPI_COMM_WORLD);
         MPI_Allreduce(&error, &error_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
