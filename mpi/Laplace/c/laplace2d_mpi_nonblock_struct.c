@@ -10,14 +10,26 @@
 #include<string.h>
 #include<mpi.h>
 
-#define index(x, y, nx) ((x) * (nx) + (y))    // a transform of 2-d array index
+#define index(x, y, ny) ((x) * (ny) + (y))    // a transform of 2-d array index
 
 double jacobi(double *A, double *A_new, int nx, int ny);
 
+/*  data mesh arrangement
+ *  ny
+ *  ^
+ *  | (0,2)  
+ *  | (0,1)   
+ *  | (0,0)  (1,0)  (2,0)
+ *  ---------------------> nx
+ * 
+    for c and cpp language, data fill column first, (1,1),(1,2) ...
+*/
+
+
 int main()
 {
-    const int total_nx = 4096;
-    const int total_ny = 4096;
+    const int total_nx = 4500;
+    const int total_ny = 4500;
     const int itc_max = 1000;
 
     const double tolerance = 1e-5;
@@ -33,14 +45,14 @@ int main()
     MPI_Get_processor_name(processor_name, &name_len);
 
     // divide by row
-    int height = total_ny / num_process + 2;
+    int weight = total_nx / num_process + 2;
     if (rank == 0 || rank == num_process-1) // only have one boundary
     {
-        height = total_ny / num_process + 1;
+        weight--;
     }
 
-    const int nx = total_nx;
-    const int ny = height;
+    const int nx = weight;
+    const int ny = total_ny;
     
     double * A = (double *)malloc(sizeof(double) * nx * ny);
     double * A_new = (double *)malloc(sizeof(double) * nx * ny);
@@ -50,7 +62,7 @@ int main()
     memset(A_new, 0, nx * ny * sizeof(double));
     if(rank == 0)
     {
-        for (int i = 0; i < nx; i++)
+        for (int i = 0; i < ny; i++)
         {
             A[i] = 1.0;
             A_new[i] = 1.0;
@@ -70,50 +82,50 @@ int main()
     {
         MPI_Request reqts, reqtr, reqbs, reqbr;
 
-        // calculate top row first
-        error = jacobi(A, A_new, nx, 3);
+        // calculate left column first
+        error = jacobi(A, A_new, 3, ny);
 
-        // exchange message with top
+        // exchange message with left
         if (rank > 0)
         {
-            MPI_Isend(A_new + nx, nx, MPI_DOUBLE, rank-1, 0, MPI_COMM_WORLD, &reqts);
-            MPI_Irecv(A_new, nx, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, &reqtr);  
+            MPI_Isend(A_new + ny, ny, MPI_DOUBLE, rank-1, 0, MPI_COMM_WORLD, &reqts);
+            MPI_Irecv(A_new, ny, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, &reqtr);  
         }
 
-        // calculate bottom row then
-        tmp = jacobi(A + nx*(ny-3), A_new + nx*(ny-3), nx, 3);
+        // calculate right column then
+        tmp = jacobi(A + ny*(nx-3), A_new + ny*(nx-3), 3, ny);
         error = error > tmp ? error : tmp;
 
-        /* exchange message with bottom */
+        /* exchange message with right */
         if (rank < num_process-1)
         {
-            MPI_Isend(A_new + (ny-2)*nx, nx, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD, &reqbs);
-            MPI_Irecv(A_new + (ny-1)*nx, nx, MPI_DOUBLE, rank+1, 0, MPI_COMM_WORLD, &reqbr);  
+            MPI_Isend(A_new + (nx-2)*ny, ny, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD, &reqbs);
+            MPI_Irecv(A_new + (nx-1)*ny, ny, MPI_DOUBLE, rank+1, 0, MPI_COMM_WORLD, &reqbr);  
         }
 
-        // calculate middle rows finally
-        tmp = jacobi(A + nx, A_new + nx, nx, ny-1);
+        // calculate middle columns finally
+        tmp = jacobi(A + ny, A_new + ny, nx-1, ny);
         error = error > tmp ? error : tmp;
 
         
-        // wait message of top
+        // wait message of left
         if (rank > 0)
         {
             MPI_Wait(&reqts, MPI_STATUS_IGNORE);
             MPI_Wait(&reqtr, MPI_STATUS_IGNORE);
         }
-        // wait message of bottom
+        // wait message of right
         if (rank < num_process-1)
         {
             MPI_Wait(&reqbs, MPI_STATUS_IGNORE);
             MPI_Wait(&reqbr, MPI_STATUS_IGNORE);
         }
 
-        for (int i = 1; i < ny-1; i++)
+        for (int i = 1; i < nx-1; i++)
         {
-            for (int j = 1; j < nx-1; j++)
+            for (int j = 1; j < ny-1; j++)
             {
-                A[index(i, j, nx)] = A_new[index(i, j, nx)];
+                A[index(i, j, ny)] = A_new[index(i, j, ny)];
             }
         }
 
@@ -147,13 +159,13 @@ int main()
 double jacobi(double *A, double *A_new, int nx, int ny)
 {
     double tmp, error = 0.0;
-    for (int i = 1; i < ny-1; i++)
+    for (int i = 1; i < nx-1; i++)
     {
-        for (int j = 1; j < nx-1; j++)
+        for (int j = 1; j < ny-1; j++)
         {
-            A_new[index(i, j, nx)] = 0.25 * (A[index(i-1, j, nx)] + A[index(i+1, j, nx)]
-                                            + A[index(i, j-1, nx)] + A[index(i, j+1, nx)]);
-            tmp = fabs(A_new[index(i, j, nx)] - A[index(i, j, nx)]);
+            A_new[index(i, j, ny)] = 0.25 * (A[index(i-1, j, ny)] + A[index(i+1, j, ny)]
+                                            + A[index(i, j-1, ny)] + A[index(i, j+1, ny)]);
+            tmp = fabs(A_new[index(i, j, ny)] - A[index(i, j, ny)]);
             error = error > tmp ? error : tmp;
         }
     }

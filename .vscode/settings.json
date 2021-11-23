@@ -45,5 +45,12 @@
         "stdio.h": "c",
         "string.h": "c",
         "mpi.h": "c"
-    }
+    },
+    "fortran.includePaths":[
+        "C:\\Program Files (x86)\\Microsoft SDKs\\MPI\\Include\\x64",
+        "C:\\Program Files (x86)\\Microsoft SDKs\\MPI\\Include",
+        "C:/Program Files (x86)/Microsoft SDKs/MPI/Include/x64",
+        "C:/Program Files (x86)/Microsoft SDKs/MPI/Include"
+    ],
 }
+
