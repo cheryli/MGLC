@@ -1,3 +1,3 @@
 # parallel
 
-sample code for parallel programs
+Sample codes for parallel programs
