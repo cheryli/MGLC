@@ -277,22 +277,31 @@ subroutine collision()
         meq(18) = 0.0d0
 
 
-
-        s(0) = 0.0d0      !!s_{\rho}
-        s(1) = Snu !!s_{e}
-        s(2) = Snu !!s_{\epsilon}
-        s(3) = 0.0d0      !!s_{j} 
-        s(4) = Sq !!s_{q}
-        s(5) = 0.0d0      !!s_{j}
-        s(6) = Sq       !!s_{q}
-        s(7) = Snu !!s_{\nu}
-        s(8) = Snu       !!s_{\nu}
+        s(0) = 0.0d0    !! s_{\rho}
+        s(1) = Snu      !! s_{e}
+        s(2) = Snu      !! s_{epsilon}
+        s(3) = 0.0d0    !! s_{j}
+        s(4) = Sq       !! s_{q}
+        s(5) = 0.0d0    !! s_{j}
+        s(6) = Sq       !! s_{q}
+        s(7) = 0.0d0    !! s_{j}
+        s(8) = Sq       !! s_{q}
+        s(9) = Snu      !! s_{\nu}
+        s(10) = Snu     !! s_{\pi}
+        s(11) = Snu     !! s_{\nu}
+        s(12) = Snu     !! s_{\pi}
+        s(13) = Snu     !! s_{nu}
+        s(14) = Snu     !! s_{nu}
+        s(15) = Snu     !! s_{nu}
+        s(16) = Sq      !! s_{m}
+        s(17) = Sq      !! s_{m}
+        s(18) = Sq      !! s_{m}
         
-        do alpha=0,8
+        do alpha=0,18
             m_post(alpha) = m(alpha)-s(alpha)*(m(alpha)-meq(alpha))
         enddo
 
-    f_post(0,i,j,k) = ( m_post(0)-m_post(1)+m_post(2) )/9.0d0
+    f_post(0,i,j,k) = m_post(0)/19.0d0 - 5.0d0/399.0d0*
     f_post(1,i,j,k) = m_post(0)/9.0d0-m_post(1)/36.0d0-m_post(2)/18.0d0+m_post(3)/6.0d0-m_post(4)/6.0d0 &
                     +m_post(7)*0.25d0
     f_post(2,i,j,k) = m_post(0)/9.0d0-m_post(1)/36.0d0-m_post(2)/18.0d0 &
