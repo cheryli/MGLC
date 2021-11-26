@@ -300,7 +300,7 @@ subroutine collision()
         do alpha=0,18
             m_post(alpha) = m(alpha)-s(alpha)*(m(alpha)-meq(alpha))
         enddo
-
+ 
     f_post(0,i,j,k) = m_post(0)/19.0d0 - 5.0d0/399.0d0*
     f_post(1,i,j,k) = m_post(0)/9.0d0-m_post(1)/36.0d0-m_post(2)/18.0d0+m_post(3)/6.0d0-m_post(4)/6.0d0 &
                     +m_post(7)*0.25d0

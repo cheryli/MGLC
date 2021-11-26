@@ -32,9 +32,10 @@
 *.app
 
 # vscode settings
+.vscode
 .vscode/*
 
-#
+# ipy notebook
 .ipynb_checkpoints
 
 # test files
