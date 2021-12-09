@@ -39,4 +39,4 @@
 .ipynb_checkpoints
 
 # test files
-test.*
+*test.*
