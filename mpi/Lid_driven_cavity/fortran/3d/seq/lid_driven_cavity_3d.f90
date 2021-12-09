@@ -4,7 +4,7 @@
 module commondata
     implicit none
     
-    integer, parameter :: nx=201, ny=201, nz = 201
+    integer, parameter :: nx=65, ny=65, nz =65
     integer, parameter :: nxHalf=(nx-1)/2+1, nyHalf=(ny-1)/2+1, nzHalf=(nz-1)/2+1
     real(8), parameter :: Reynolds=1000.0d0
     real(8), parameter :: rho0=1.0d0
@@ -60,6 +60,8 @@ program main
 
 
     call initial()
+    ! call output_ASCII()
+    call output_Tecplot()
     
     call CPU_TIME(start)
     
@@ -78,10 +80,16 @@ program main
         if(MOD(itc,2000).EQ.0) then
             call check()
             ! call output_ASCII()
+            ! call getVelocity()
         endif
-        !if(MOD(itc,100000).EQ.0) then
-        !    call output_Tecplot()
-        !endif
+
+        if(MOD(itc,20000).EQ.0) then
+            call getVelocity()
+        endif
+
+        if(MOD(itc,10000) .EQ. 0) then
+            EXIT
+        endif
 
     enddo
     
@@ -91,8 +99,8 @@ program main
 
     itc = itc+1
     call output_Tecplot()
-    call output_ASCII()
-    ! call output_binary()
+    ! call output_ASCII()
+    call output_binary()
     call getVelocity()
     
     write(*,*) "Deallocate Array..."
@@ -124,7 +132,7 @@ subroutine initial()
     itc = 0
     errorU = 100.0d0
 
-    write(*,*) "nx=",nx,", ny=",ny
+    write(*,*) "nx=",nx,", ny=",ny, ",  nz = ",nz
     write(*,*) "Reynolds=",real(Reynolds)
     write(*,*) "U0=",real(U0),",    tauf=",real(tauf)
 
@@ -141,7 +149,7 @@ subroutine initial()
     zp(0) = 0.0d0
     zp(nz+1) = dble(nz)
     do k=1,nz
-        yp(k) = dble(k)-0.5d0
+        zp(k) = dble(k)-0.5d0
     enddo
 
     
@@ -165,7 +173,7 @@ subroutine initial()
     wp = 0.0d0
 
     do j = 1, ny
-        do i=1, nx
+        do i = 1, nx
             u(i, j, nz) = U0
         enddo
     enddo
@@ -196,8 +204,11 @@ subroutine collision()
     real(8) :: m(0:18)
     real(8) :: m_post(0:18)
     real(8) :: meq(0:18)
-    real(8) :: us2
     !---------------------------
+    ! real(8) :: us2, un, feq
+    !---------------------------
+
+
     do k = 1, nz
         do j = 1, ny
             do i = 1, nx
@@ -301,23 +312,88 @@ subroutine collision()
             m_post(alpha) = m(alpha)-s(alpha)*(m(alpha)-meq(alpha))
         enddo
  
-    f_post(0,i,j,k) = m_post(0)/19.0d0 - 5.0d0/399.0d0*
-    f_post(1,i,j,k) = m_post(0)/9.0d0-m_post(1)/36.0d0-m_post(2)/18.0d0+m_post(3)/6.0d0-m_post(4)/6.0d0 &
-                    +m_post(7)*0.25d0
-    f_post(2,i,j,k) = m_post(0)/9.0d0-m_post(1)/36.0d0-m_post(2)/18.0d0 &
-                    +m_post(5)/6.0d0-m_post(6)/6.0d0-m_post(7)*0.25d0 
-    f_post(3,i,j,k) = m_post(0)/9.0d0-m_post(1)/36.0d0-m_post(2)/18.0d0-m_post(3)/6.0d0+m_post(4)/6.0d0 &
-                    +m_post(7)*0.25d0
-    f_post(4,i,j,k) = m_post(0)/9.0d0-m_post(1)/36.0d0-m_post(2)/18.0d0 &
-                    -m_post(5)/6.0d0+m_post(6)/6.0d0-m_post(7)*0.25d0
-    f_post(5,i,j,k) = m_post(0)/9.0d0+m_post(1)/18.0d0+m_post(2)/36.0d0+m_post(3)/6.0d0+m_post(4)/12.0d0 &
-                    +m_post(5)/6.0d0+m_post(6)/12.0d0+m_post(8)*0.25d0
-    f_post(6,i,j,k) = m_post(0)/9.0d0+m_post(1)/18.0d0+m_post(2)/36.0d0-m_post(3)/6.0d0-m_post(4)/12.0d0 &
-                    +m_post(5)/6.0d0+m_post(6)/12.0d0-m_post(8)*0.25d0
-    f_post(7,i,j,k) = m_post(0)/9.0d0+m_post(1)/18.0d0+m_post(2)/36.0d0-m_post(3)/6.0d0-m_post(4)/12.0d0 &
-                    -m_post(5)/6.0d0-m_post(6)/12.0d0+m_post(8)*0.25d0
-    f_post(8,i,j,k) = m_post(0)/9.0d0+m_post(1)/18.0d0+m_post(2)/36.0d0+m_post(3)/6.0d0+m_post(4)/12.0d0 &
-                    -m_post(5)/6.0d0-m_post(6)/12.0d0-m_post(8)*0.25d0
+    f_post(0,i,j,k) = m_post(0)/19.0d0 - 5.0d0/399.0d0*m_post(1) + m_post(2)/21.0d0
+
+    ! ------------
+    f_post(1,i,j,k) = m_post(0)/19.0d0 - 11.0d0/2394.0d0*m_post(1) - m_post(2)/63.0d0 + m_post(3)/10.0d0 &
+        - m_post(4)/10.0d0 + m_post(9)/18.0d0 - m_post(10)/18.0d0
+
+    f_post(2,i,j,k) = m_post(0)/19.0d0 - 11.0d0/2394.0d0*m_post(1) - m_post(2)/63.0d0 - m_post(3)/10.0d0 &
+        + m_post(4)/10.0d0 + m_post(9)/18.0d0 - m_post(10)/18.0d0
+    
+    ! ------------
+    f_post(3,i,j,k) = m_post(0)/19.0d0 - 11.0d0/2394.0d0*m_post(1) - m_post(2)/63.0d0 + m_post(5)/10.0d0 &
+        - m_post(6)/10.0d0 - m_post(9)/36.0d0 + m_post(10)/36.0d0 + m_post(11)/12.0d0 - m_post(12)/12.0d0
+    
+    f_post(4,i,j,k) = m_post(0)/19.0d0 - 11.0d0/2394.0d0*m_post(1) - m_post(2)/63.0d0 - m_post(5)/10.0d0 &
+        + m_post(6)/10.0d0 - m_post(9)/36.0d0 + m_post(10)/36.0d0 + m_post(11)/12.0d0 - m_post(12)/12.0d0
+    
+    f_post(5,i,j,k) = m_post(0)/19.0d0 - 11.0d0/2394.0d0*m_post(1) - m_post(2)/63.0d0 + m_post(7)/10.0d0 &
+        - m_post(8)/10.0d0 - m_post(9)/36.0d0 + m_post(10)/36.0d0 - m_post(11)/12.0d0 + m_post(12)/12.0d0
+
+    f_post(6,i,j,k) = m_post(0)/19.0d0 - 11.0d0/2394.0d0*m_post(1) - m_post(2)/63.0d0 - m_post(7)/10.0d0 &
+        + m_post(8)/10.0d0 - m_post(9)/36.0d0 + m_post(10)/36.0d0 - m_post(11)/12.0d0 + m_post(12)/12.0d0
+
+    ! ------------
+    f_post(7,i,j,k) = m_post(0)/19.0d0 + 4.0d0/1197.0d0*m_post(1) + m_post(2)/252.0d0 + m_post(3)/10.0d0 &
+        + m_post(4)/40.0d0 + m_post(5)/10.0d0 + m_post(6)/40.0d0 + m_post(9)/36.0d0 + m_post(10)/72.0d0 &
+        + m_post(11)/12.0d0 + m_post(12)/24.0d0 + m_post(13)/4.0d0 + m_post(16)/8.0d0 - m_post(17)/8.0d0
+
+    f_post(8,i,j,k) = m_post(0)/19.0d0 + 4.0d0/1197.0d0*m_post(1) + m_post(2)/252.0d0 - m_post(3)/10.0d0 &
+        - m_post(4)/40.0d0 + m_post(5)/10.0d0 + m_post(6)/40.0d0 + m_post(9)/36.0d0 + m_post(10)/72.0d0 &
+        + m_post(11)/12.0d0 + m_post(12)/24.0d0 - m_post(13)/4.0d0 - m_post(16)/8.0d0 - m_post(17)/8.0d0
+
+    f_post(9,i,j,k) = m_post(0)/19.0d0 + 4.0d0/1197.0d0*m_post(1) + m_post(2)/252.0d0 + m_post(3)/10.0d0 &
+        + m_post(4)/40.0d0 - m_post(5)/10.0d0 - m_post(6)/40.0d0 + m_post(9)/36.0d0 + m_post(10)/72.0d0 &
+        + m_post(11)/12.0d0 + m_post(12)/24.0d0 - m_post(13)/4.0d0 + m_post(16)/8.0d0 + m_post(17)/8.0d0
+
+    f_post(10,i,j,k) = m_post(0)/19.0d0 + 4.0d0/1197.0d0*m_post(1) + m_post(2)/252.0d0 - m_post(3)/10.0d0 &
+        - m_post(4)/40.0d0 - m_post(5)/10.0d0 - m_post(6)/40.0d0 + m_post(9)/36.0d0 + m_post(10)/72.0d0 &
+        + m_post(11)/12.0d0 + m_post(12)/24.0d0 + m_post(13)/4.0d0 - m_post(16)/8.0d0 + m_post(17)/8.0d0
+
+    ! -----------
+    f_post(11,i,j,k) = m_post(0)/19.0d0 + 4.0d0/1197.0d0*m_post(1) + m_post(2)/252.0d0 + m_post(3)/10.0d0 &
+        + m_post(4)/40.0d0 + m_post(7)/10.0d0 + m_post(8)/40.0d0 + m_post(9)/36.0d0 + m_post(10)/72.0d0 &
+        - m_post(11)/12.0d0 - m_post(12)/24.0d0 + m_post(15)/4.0d0 - m_post(16)/8.0d0 + m_post(18)/8.0d0
+
+    f_post(12,i,j,k) = m_post(0)/19.0d0 + 4.0d0/1197.0d0*m_post(1) + m_post(2)/252.0d0 - m_post(3)/10.0d0 &
+        - m_post(4)/40.0d0 + m_post(7)/10.0d0 + m_post(8)/40.0d0 + m_post(9)/36.0d0 + m_post(10)/72.0d0 &
+        - m_post(11)/12.0d0 - m_post(12)/24.0d0 - m_post(15)/4.0d0 + m_post(16)/8.0d0 + m_post(18)/8.0d0
+
+    f_post(13,i,j,k) = m_post(0)/19.0d0 + 4.0d0/1197.0d0*m_post(1) + m_post(2)/252.0d0 + m_post(3)/10.0d0 &
+        + m_post(4)/40.0d0 - m_post(7)/10.0d0 - m_post(8)/40.0d0 + m_post(9)/36.0d0 + m_post(10)/72.0d0 &
+        - m_post(11)/12.0d0 - m_post(12)/24.0d0 - m_post(15)/4.0d0 - m_post(16)/8.0d0 - m_post(18)/8.0d0
+    
+    f_post(14,i,j,k) = m_post(0)/19.0d0 + 4.0d0/1197.0d0*m_post(1) + m_post(2)/252.0d0 - m_post(3)/10.0d0 &
+        - m_post(4)/40.0d0 - m_post(7)/10.0d0 - m_post(8)/40.0d0 + m_post(9)/36.0d0 + m_post(10)/72.0d0 &
+        - m_post(11)/12.0d0 - m_post(12)/24.0d0 + m_post(15)/4.0d0 + m_post(16)/8.0d0 - m_post(18)/8.0d0
+
+    ! -----------
+    f_post(15,i,j,k) = m_post(0)/19.0d0 + 4.0d0/1197.0d0*m_post(1) + m_post(2)/252.0d0 + m_post(5)/10.0d0 &
+        + m_post(6)/40.0d0 + m_post(7)/10.0d0 + m_post(8)/40.0d0 - m_post(9)/18.0d0 - m_post(10)/36.0d0 &
+        + m_post(14)/4.0d0 + m_post(17)/8.0d0 - m_post(18)/8.0d0
+    
+    f_post(16,i,j,k) = m_post(0)/19.0d0 + 4.0d0/1197.0d0*m_post(1) + m_post(2)/252.0d0 - m_post(5)/10.0d0 &
+        - m_post(6)/40.0d0 + m_post(7)/10.0d0 + m_post(8)/40.0d0 - m_post(9)/18.0d0 - m_post(10)/36.0d0 &
+        - m_post(14)/4.0d0 - m_post(17)/8.0d0 - m_post(18)/8.0d0
+
+    f_post(17,i,j,k) = m_post(0)/19.0d0 + 4.0d0/1197.0d0*m_post(1) + m_post(2)/252.0d0 + m_post(5)/10.0d0 &
+        + m_post(6)/40.0d0 - m_post(7)/10.0d0 - m_post(8)/40.0d0 - m_post(9)/18.0d0 - m_post(10)/36.0d0 &
+        - m_post(14)/4.0d0 + m_post(17)/8.0d0 + m_post(18)/8.0d0
+
+    f_post(18,i,j,k) = m_post(0)/19.0d0 + 4.0d0/1197.0d0*m_post(1) + m_post(2)/252.0d0 - m_post(5)/10.0d0 &
+        - m_post(6)/40.0d0 - m_post(7)/10.0d0 - m_post(8)/40.0d0 - m_post(9)/18.0d0 - m_post(10)/36.0d0 &
+        + m_post(14)/4.0d0 - m_post(17)/8.0d0 + m_post(18)/8.0d0
+
+
+                ! us2 = u(i,j,k)*u(i,j,k) + v(i,j,k)*v(i,j,k) + w(i,j,k)*w(i,j,k)
+                ! do alpha = 0, 18
+                !     un = u(i,j,k)*ex(alpha) + v(i,j,k)*ey(alpha) + w(i,j,k)*ez(alpha)
+                !     feq = rho(i,j,k) * omega(alpha) * (1.0d0 + 3.0d0*un + 4.5d0*un*un - 1.5d0*us2)
+                    
+                !     f_post(alpha,i,j,k) = f(alpha,i,j,k) - Snu*(f(alpha,i,j,k) - feq)
+                ! enddo
+    
             enddo
         enddo
     enddo
@@ -329,18 +405,20 @@ end subroutine collision
 subroutine streaming()
     use commondata
     implicit none
-    integer :: i, j
-    integer :: ip, jp
+    integer :: i, j, k
+    integer :: ip, jp, kp   
     integer :: alpha
     
-    do j=1,ny
-        do i=1,nx
-            do alpha=0,8
-                ip = i-ex(alpha)
-                jp = j-ey(alpha)
-                
-                f(alpha,i,j) = f_post(alpha,ip,jp)
-                
+    do k = 1, nz
+        do j = 1, ny
+            do i = 1, nx
+                do alpha=0,18
+                    ip = i - ex(alpha)
+                    jp = j - ey(alpha)
+                    kp = k - ez(alpha)
+                    
+                    f(alpha,i,j,k) = f_post(alpha,ip,jp,kp)
+                enddo
             enddo
         enddo
     enddo
@@ -352,31 +430,62 @@ end subroutine streaming
 subroutine bounceback()
     use commondata
     implicit none
-    integer :: i, j
+    integer :: i, j, k
 
-    do j=1,ny
-        !Left side (i=1)
-        f(1,1,j) = f_post(3,1,j)
-        f(5,1,j) = f_post(7,1,j)
-        f(8,1,j) = f_post(6,1,j)
+    do k = 1, nz
+        do j = 1, ny
+            ! (i = 1)
+            f(1,1,j,k) = f_post(2,1,j,k)
+            f(7,1,j,k) = f_post(10,1,j,k)
+            f(9,1,j,k) = f_post(8,1,j,k)
+            f(11,1,j,k) = f_post(14,1,j,k)
+            f(13,1,j,k) = f_post(12,1,j,k)
 
-        !Right side (i=nx)
-        f(3,nx,j) = f_post(1,nx,j)
-        f(6,nx,j) = f_post(8,nx,j)
-        f(7,nx,j) = f_post(5,nx,j)
+            !(i = nx)
+            f(2,nx,j,k) = f_post(1,nx,j,k)
+            f(10,nx,j,k) = f_post(7,nx,j,k)
+            f(8,nx,j,k) = f_post(9,nx,j,k)
+            f(14,nx,j,k) = f_post(11,nx,j,k)
+            f(12,nx,j,k) = f_post(13,nx,j,k)
+
+        enddo
     enddo
 
 
-    do i=1,nx
-        !Bottom side (j=1)
-        f(2,i,1) = f_post(4,i,1)
-        f(5,i,1) = f_post(7,i,1)
-        f(6,i,1) = f_post(8,i,1)
+    do k = 1, nz
+        do i = 1, nx
+            !(j = 1)
+            f(3,i,1,k) = f_post(4,i,1,k)
+            f(7,i,1,k) = f_post(10,i,1,k)
+            f(8,i,1,k) = f_post(9,i,1,k)
+            f(15,i,1,k) = f_post(18,i,1,k)
+            f(17,i,1,k) = f_post(16,i,1,k)
 
-        !Top side (j=ny)
-        f(4,i,ny) = f_post(2,i,ny)
-        f(7,i,ny) = f_post(5,i,ny)-rho(i,ny)*(U0)/6.0d0
-        f(8,i,ny) = f_post(6,i,ny)-rho(i,ny)*(-U0)/6.0d0
+            !(j = ny)
+            f(4,i,ny,k) = f_post(3,i,ny,k)
+            f(10,i,ny,k) = f_post(7,i,ny,k)
+            f(9,i,ny,k) = f_post(8,i,ny,k)
+            f(18,i,ny,k) = f_post(15,i,ny,k)
+            f(16,i,ny,k) = f_post(17,i,ny,k)
+        enddo
+    enddo
+
+    do j = 1, ny
+        do i = 1, nx
+            ! (k = 1)
+            f(5,i,j,1) = f_post(6,i,j,1)
+            f(11,i,j,1) = f_post(14,i,j,1)
+            f(12,i,j,1) = f_post(13,i,j,1)
+            f(15,i,j,1) = f_post(18,i,j,1)
+            f(16,i,j,1) = f_post(17,i,j,1)
+
+            ! (k = nz)
+            f(6,i,j,nz) = f_post(5,i,j,nz)
+            f(14,i,j,nz) = f_post(11,i,j,nz) - rho(i,j,nz) / 6.0d0 * (U0)
+            f(13,i,j,nz) = f_post(12,i,j,nz) - rho(i,j,nz) / 6.0d0 * (-U0)
+            f(18,i,j,nz) = f_post(15,i,j,nz)
+            f(17,i,j,nz) = f_post(16,i,j,nz)
+        enddo
     enddo
     
     return
@@ -386,13 +495,26 @@ end subroutine bounceback
 subroutine macro()
     use commondata
     implicit none
-    integer :: i, j
+    integer :: i, j, k, alpha
 
-    do j=1,ny
-        do i=1,nx
-            rho(i,j) = f(0,i,j)+f(1,i,j)+f(2,i,j)+f(3,i,j)+f(4,i,j)+f(5,i,j)+f(6,i,j)+f(7,i,j)+f(8,i,j)
-            u(i,j) = ( f(1,i,j)-f(3,i,j)+f(5,i,j)-f(6,i,j)-f(7,i,j)+f(8,i,j) )/rho(i,j)
-            v(i,j) = ( f(2,i,j)-f(4,i,j)+f(5,i,j)+f(6,i,j)-f(7,i,j)-f(8,i,j) )/rho(i,j)
+    rho = 0.0d0
+    u = 0.0d0
+    v = 0.0d0
+    w = 0.0d0
+    do k = 1, nz
+        do j = 1, ny
+            do i = 1, nx
+                do alpha = 0, 18
+                    rho(i,j,k) = rho(i,j,k) + f(alpha,i,j,k)
+                    u(i,j,k) = u(i,j,k) + f(alpha,i,j,k) * ex(alpha)
+                    v(i,j,k) = v(i,j,k) + f(alpha,i,j,k) * ey(alpha)
+                    w(i,j,k) = w(i,j,k) + f(alpha,i,j,k) * ez(alpha)
+                enddo
+
+                u(i,j,k) = u(i,j,k)/rho(i,j,k)
+                v(i,j,k) = v(i,j,k)/rho(i,j,k)
+                w(i,j,k) = w(i,j,k)/rho(i,j,k)
+            enddo
         enddo
     enddo
 
@@ -403,21 +525,24 @@ end subroutine macro
 subroutine check()
     use commondata
     implicit none
-    integer :: i, j
+    integer :: i, j, k
     real(8) :: error1, error2
 
     error1 = 0.0d0
     error2 = 0.0d0
 
-    do j=1,ny
-        do i=1,nx
-            error1 = error1+(u(i,j)-up(i,j))*(u(i,j)-up(i,j))+(v(i,j)-vp(i,j))*(v(i,j)-vp(i,j))
-            error2 = error2+u(i,j)*u(i,j)+v(i,j)*v(i,j)
-            
-            up(i,j) = u(i,j)
-            vp(i,j) = v(i,j) 
+    do k = 1, nz
+        do j = 1, ny
+            do i = 1, nx
+                error1 = error1 + (u(i,j,k)-up(i,j,k))*(u(i,j,k)-up(i,j,k))+(v(i,j,k)-vp(i,j,k))*(v(i,j,k)-vp(i,j,k))
+                error2 = error2 + u(i,j,k)*u(i,j,k)+v(i,j,k)*v(i,j,k) + w(i,j,k)*w(i,j,k)
+            enddo
         enddo
     enddo
+
+    up = u
+    vp = v
+    wp = w
 
     errorU = sqrt(error1)/sqrt(error2)
 
@@ -430,24 +555,26 @@ end subroutine check
 subroutine output_ASCII()
     use commondata
     implicit none
-    integer :: i, j
+    integer :: i, j, k
     character(len=100) :: filename
 
     write(filename,*) itc
     filename = adjustl(filename)
 
-    open(unit=02,file='MRTcavity-'//trim(filename)//'.dat',status='unknown')
-        write(02,*) 'TITLE="Lid Driven Cavity"'
-        write(02,*) 'VARIABLES="X" "Y" "U" "V" "Pressure" '
-        write(02,101) nx, ny
-        do j=1,ny
-            do i=1,nx
-                write(02,100) xp(i), yp(j), u(i,j), v(i,j), rho(i,j)/3.0d0
+    open(unit=77,file='MRTcavity-'//trim(filename)//'.dat',status='unknown')
+        write(77,*) 'TITLE="Lid Driven Cavity"'
+        write(77,*) 'VARIABLES="X" "Y" "Z" "U" "V" "W" "Pressure" '
+        write(77,101) nx, ny, nz
+        do k = 1, nz
+            do j = 1, ny
+                do i = 1, nx
+                    write(77,100) xp(i), yp(j), zp(k), u(i,j,k), v(i,j,k), w(i,j,k), rho(i,j,k)/3.0d0
+                enddo
             enddo
         enddo
-100     format(1x,2(e11.4,' '),10(e13.6,' '))
-101     format('ZONE',1x,'I=',1x,i5,2x,'J=',1x,i5,1x,'F=POINT')
-    close(02)
+100     format(1x,3(e11.4,' '),10(e13.6,' '))
+101     format('ZONE',1x,'I=',1x,i5,2x,'J=',1x,i5,1x,'K=',1x,i5,1x,'F=POINT')
+    close(77)
 
     return
 end subroutine output_ASCII
@@ -456,20 +583,20 @@ end subroutine output_ASCII
 subroutine output_binary()
     use commondata
     implicit none
-    integer :: i, j
+    integer :: i, j, k
     character(len=100) :: filename
     
     write(filename,*) itc
     filename = adjustl(filename)
     
     open(unit=01,file='MRTcavity-'//trim(filename)//'.bin',form="unformatted",access="sequential")
-    write(01) ((u(i,j),i=1,nx),j=1,ny)
-    write(01) ((v(i,j),i=1,nx),j=1,ny)
-    write(01) ((rho(i,j),i=1,nx),j=1,ny)
+    write(01) (((u(i,j,k), i = 1, nx), j = 1, ny), k = 1, nz)
+    write(01) (((v(i,j,k), i = 1, nx), j = 1, ny), k = 1, nz)
+    write(01) (((rho(i,j,k), i = 1, nx), j = 1, ny), k = 1, nz)
     close(01)
 
     return
-    end subroutine output_binary
+end subroutine output_binary
 
 
 !!!c--------------------------------
@@ -481,8 +608,7 @@ subroutine output_binary()
     character(len=9) :: B2
     REAL(4) :: zoneMarker, eohMarker
     character(len=40) :: title
-    character(len=40) :: V1,V2,V3,V4,V5
-    integer, parameter :: kmax=1
+    character(len=40) :: V1,V2,V3,V4,V5,V6,V7
     character(len=40) :: zoneName
     
     write(B2,'(i9.9)') itc
@@ -503,19 +629,23 @@ subroutine output_binary()
     call dumpstring(title)
 
     !c-- Number of variables in this data file (here 5 variables)
-    write(41) 5
+    write(41) 7
 
     !c-- Variable names.
-    V1='X'
+    V1 = 'X'
     call dumpstring(V1)
-    V2='Y'
+    V2 = 'Y'
     call dumpstring(V2)
-    V3='U'
+    V3 = 'Z'
     call dumpstring(V3)
-    V4='V'
+    V4 = 'U'
     call dumpstring(V4)
-    V5='Pressure'
+    V5 = 'V'
     call dumpstring(V5)
+    V6 = 'W'
+    call dumpstring(V6)
+    V7 = 'Pressure'
+    call dumpstring(V7)
 
     !c-----Zones-----------------------------
 
@@ -546,7 +676,7 @@ subroutine output_binary()
     !---------IMax,JMax,KMax
     write(41) nx
     write(41) ny
-    write(41) kmax
+    write(41) nz
 
     !-----------1=Auxiliary name/value pair to follow
     !-----------0=No more Auxiliar name/value pairs.
@@ -562,6 +692,8 @@ subroutine output_binary()
     write(41) 1
     write(41) 1
     write(41) 1
+    write(41) 1
+    write(41) 1
 
     !--------Has variable sharing 0 = no, 1 = yes.
     write(41) 0
@@ -571,14 +703,16 @@ subroutine output_binary()
     write(41) -1
 
     !---------------------------------------------------------------------
-    do k=1,kmax
+    do k=1,nz
         do j=1,ny
             do i=1,nx
                 write(41) real(xp(i))
                 write(41) real(yp(j))
-                write(41) real(u(i,j))
-                write(41) real(v(i,j))
-                write(41) real(rho(i,j)/3.0d0)
+                write(41) real(zp(k))
+                write(41) real(u(i,j,k))
+                write(41) real(v(i,j,k))
+                write(41) real(w(i,j,k))
+                write(41) real(rho(i,j,k)/3.0d0)
             end do
         end do
     enddo
@@ -611,17 +745,20 @@ subroutine output_binary()
 subroutine getVelocity()
     use commondata
     implicit none
-    integer :: i, j
+    integer :: i, j, k
+    character(len=9) :: B2
 
-    open(unit=02,file='./u-y.dat',status='unknown')
-    do j=1,ny
-        write(02,*) u(nxHalf,j)/U0, yp(j)/dble(nx)
+    write(B2,'(i9.9)') itc
+
+    open(unit=02,file='./u-z_'//B2//'.dat',status='unknown')
+    do k=1,nz
+        write(02,*) u(nxHalf, nyHalf, k)/U0, zp(k)/dble(nz)
     enddo
     close(02)
-    
-    open(unit=03,file='./x-v.dat',status='unknown')
+
+    open(unit=03,file='./x-w_'//B2//'.dat',status='unknown')
     do i=1,nx
-        write(03,*) xp(i)/dble(nx), v(i,nyHalf)/U0
+        write(03,*) xp(i)/dble(nx), w(i, nyHalf, nzHalf)/U0
     enddo
     close(03)
 

@@ -94,7 +94,7 @@ program main
     endif
 
 
-    write(*,"('I am rank', I3, '   nx*ny =', I3, 'x', I3)") rank, nx, ny
+    ! write(*,"('I am rank', I3, '   nx*ny =', I3, 'x', I3)") rank, nx, ny
 
 
     call initial()
@@ -428,9 +428,9 @@ subroutine message_passing()
         call MPI_Send(f_post(8, nx, 1), 1, MPI_DOUBLE_PRECISION, rank-nx_block+1, 2, MPI_COMM_WORLD, rc)
     endif
 
-
-
 end subroutine message_passing
+
+
 
 subroutine streaming()
     use commondata
@@ -633,8 +633,6 @@ subroutine output()
             deallocate(tmp_u)
             deallocate(tmp_v)
             deallocate(tmp_rho)
-
-            dy = dy + num(2)
         enddo
 
         call output_ASCII(xp, yp, total_u, total_v, total_rho, total_nx, total_ny, itc)
