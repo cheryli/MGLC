@@ -39,4 +39,10 @@
 .ipynb_checkpoints
 
 # test files
+<<<<<<< HEAD
 *test.*
+=======
+*test.*
+
+
+>>>>>>> origin/gh-pages
