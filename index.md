@@ -1,14 +1,14 @@
-## Welcome to GitHub Pages
+## MGLC
 
-You can use the [editor on GitHub](https://github.com/cheryli/parallel/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+MGLC(Multi-GPU implementation of Lattice Boltzmann Method for complex flows).
 
+Here we give a detailed introduction to our MGLC project, especially focus on its parallel implementation, if you interest in LBM(lattice Boltzmann method), [refer here to a brief introduction]().
 ### Markdown
 
 Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
 
-```markdown
+ ```markdown
 Syntax highlighted code block
 
 # Header 1
