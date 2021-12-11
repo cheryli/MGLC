@@ -1,13 +1,12 @@
 ---
 layout: default
 title: "MPI parallel of Jacobi iteration"
-permalink: /mpi/jacobi/
 ---
 
 
 ## test 
 aaaaaaaaaaaaaaa
-
+permalink: /mpi/jacobi/
 <!-- 
 <ul>
   {% for post in site.posts %}
