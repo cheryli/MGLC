@@ -3,7 +3,7 @@ module commondata
     
     integer, parameter :: total_nx=121, total_ny=121, total_nz = 121
     integer, parameter :: nx_block = 2, ny_block = 2, nz_block = 2
-    integer :: nx, ny, nz
+    integer :: nx, ny, nz  
     integer :: block_x, block_y, block_z
     real(8), parameter :: Reynolds=1000.0d0
     real(8), parameter :: rho0=1.0d0

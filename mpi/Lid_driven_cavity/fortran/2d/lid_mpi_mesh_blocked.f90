@@ -606,7 +606,7 @@ subroutine output()
             call MPI_Recv(tmp_v, num(1) * num(2), MPI_DOUBLE_PRECISION, p_rank, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
             call MPI_Recv(tmp_rho, num(1) * num(2), MPI_DOUBLE_PRECISION, p_rank, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
 
-            ! determine the origion
+            ! determine the origin
             dx = num(1) * (num(3) - 1)
             if (num(1) == total_nx / nx_block) then
                 dx = dx + MOD(total_nx, nx_block)

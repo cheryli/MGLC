@@ -1,22 +1,115 @@
-
-
 subroutine output()
     use mpi
     use commondata
     implicit none
     integer :: i, j, k
-    integer :: p_rank, num(1:4) ,dx = 0, dy = 0, dz = 0
-    real(8), allocatable :: total_u(:, :), total_v(:, :), total_w(), total_rho(:, :)
-    real(8), allocatable :: tmp_u(:, :), tmp_v(:, :), tmp_w(:,:), tmp_rho(:, :)
+    integer :: p_rank, num(1:6) ,dx = 0, dy = 0, dz = 0
+    real(8), allocatable :: total_u(:, :, :), total_v(:, :, :), total_w(:, :, :), total_rho(:, :, :)
+    real(8), allocatable :: tmp_u(:, :, :), tmp_v(:, :, :), tmp_w(:, :, :), tmp_rho(:, :, :)
     
+    ! use rank 0 to receive data and output the results
 
+    if (rank > 0) then  !!! ----  rank != 0 send data
+        ! collect the rank information
+        num(1) = nx
+        num(2) = ny
+        num(3) = nz
+        num(4) = block_x
+        num(5) = block_y
+        num(6) = block_z
+        ! send to rank 0
+        call MPI_Send(num, 6, MPI_INTEGER, 0, 0, MPI_COMM_WORLD, rc)    ! rank information
+        call MPI_Send(u, nx*ny*nz, MPI_DOUBLE_PRECISION, 0, 1, MPI_COMM_WORLD, rc)
+        call MPI_Send(v, nx*ny*nz, MPI_DOUBLE_PRECISION, 0, 2, MPI_COMM_WORLD, rc)
+        call MPI_Send(w, nx*ny*nz, MPI_DOUBLE_PRECISION, 0, 3, MPI_COMM_WORLD, rc)
+        call MPI_Send(rho, nx*ny*nz, MPI_DOUBLE_PRECISION, 0, 4, MPI_COMM_WORLD, rc)
+    else    !!! ---- rank 0 collect data
+        ! allocate array
+        allocate(total_u(total_nx, total_ny, total_nz))
+        allocate(total_v(total_nx, total_ny, total_nz))
+        allocate(total_w(total_nx, total_ny, total_nz))
+        allocate(total_rho(total_nx, total_ny, total_nz))
 
+        ! collect data from rank 0
+        do k = 1, nz
+            do j = 1, ny
+                do i = 1, nx
+                    total_u(i, j, k) = u(i, j, k)
+                    total_v(i, j, k) = v(i, j, k)
+                    total_w(i, j, k) = w(i, j, k)
+                    total_rho(i, j, k) = rho(i, j, k)
+                enddo
+            enddo
+        enddo
 
+        ! collect data from all other processors
+        do p_rank = 1, num_process-1
+            ! receive the rank information
+            call MPI_Recv(num, 6, MPI_INTEGER, p_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
+
+            ! creat buffer
+            allocate(tmp_u(num(1), num(2), num(3)))
+            allocate(tmp_v(num(1), num(2), num(3)))
+            allocate(tmp_w(num(1), num(2), num(3)))
+            allocate(tmp_rho(num(1), num(2), num(3)))
+
+            ! receive data
+            call MPI_Recv(tmp_u, num(1) * num(2) * num(3), MPI_DOUBLE_PRECISION, p_rank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
+            call MPI_Recv(tmp_v, num(1) * num(2) * num(3), MPI_DOUBLE_PRECISION, p_rank, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
+            call MPI_Recv(tmp_w, num(1) * num(2) * num(3), MPI_DOUBLE_PRECISION, p_rank, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
+            call MPI_Recv(tmp_rho, num(1) * num(2) * num(3), MPI_DOUBLE_PRECISION, p_rank, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
+
+            ! determine the origin
+            dx = num(1) * (num(4) - 1)  !! nx * (block_x - 1)
+            if (num(1) == total_nx / nx_block) then
+                dx = dx + MOD(total_nx, nx_block)
+            endif
+
+            dy = num(2) * (num(5) - 1)  !! ny * (block_y - 1)
+            if (num(2) == total_ny / ny_block) then
+                dy = dy + MOD(total_ny, ny_block)
+            endif
+
+            dz = num(3) * (num(6) - 1)  !! nz * (block_z - 1)
+            if (num(3) == total_nz / nz_block) then
+                dz = dz + MOD(total_nz, nz_block)
+            endif
+
+        
+
+            ! assign data
+            do k = 1, num(3)
+                do j = 1, num(2)
+                    do i = 1, num(1)
+                        total_u(i + dx, j + dy, k + dz) = tmp_u(i, j, k)
+                        total_v(i + dx, j + dy, k + dz) = tmp_v(i, j, k)
+                        total_w(i + dx, j + dy, k + dz) = tmp_w(i, j, k)
+                        total_rho(i + dx, j + dy, k + dz) = tmp_rho(i, j, k)
+                    enddo
+                enddo
+            enddo
+
+            ! de-allocate buffer arrays
+            deallocate(tmp_u)
+            deallocate(tmp_v)
+            deallocate(tmp_w)
+            deallocate(tmp_rho)
+        enddo
+
+        ! after collect total_* data, then output
+        ! call output_ASCII(xp, yp, zp, total_u, total_v, total_w, total_rho, total_nx, total_ny, total_nz, itc)
+        ! call output_binary(total_u, total_v, total_w, total_rho, total_nx, total_ny, total_nz, itc)
+        call output_Tecplot(xp, yp, zp, total_u, total_v, total_w, total_rho, total_nx, total_ny, total_nz, itc)
+        call getVelocity(xp, yp, zp, total_u, total_v, total_w, total_nx, total_ny, total_nz, U0, itc)
+
+        ! de-allocate total arrays
+        deallocate(total_u)
+        deallocate(total_v)
+        deallocate(total_w)
+        deallocate(total_rho)
+    endif
 
 end subroutine output
-
-
-
 
 
 
