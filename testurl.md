@@ -20,11 +20,3 @@ title: "testurl"
 [a link to a note](/assets/notes.pdf)
 
 ## test list
-
-<ul>
-  {% for post in site.posts %}
-    <li>
-      <a href="{{ post.url }}">{{ post.title }}</a>
-    </li>
-  {% endfor %}
-</ul>
