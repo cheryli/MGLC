@@ -1,11 +1,14 @@
 ---
-layout: page
+layout: default
 title: "MPI parallel of Jacobi iteration"
 permalink: /mpi/jacobi/
 ---
 
 
+## test 
+aaaaaaaaaaaaaaa
 
+<!-- 
 <ul>
   {% for post in site.posts %}
     <li>
@@ -13,4 +16,4 @@ permalink: /mpi/jacobi/
       {{ post.excerpt }}
     </li>
   {% endfor %}
-</ul>
+</ul> -->
