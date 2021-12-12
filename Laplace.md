@@ -8,6 +8,7 @@ permalink: /mpi/jacobi/
 ## Jacobi iteration of Laplace equation.
 We can use jacobi iteration to numerically solve the Laplace's equation.  
 The general form of Laplace's equation is:
+
 $$
 \begin{equation}
     \nabla^2 u = 0
@@ -15,6 +16,7 @@ $$
 $$
 
 For simplicity, we consider the two-dimensional case in Cartesian coordinates, it takes the form:
+
 $$
 \begin{equation}
     \left(\frac{\partial^2}{\partial x^2} + \frac{\partial^2}{\partial y^2}\right) u(x, y) = 0
@@ -22,28 +24,35 @@ $$
 $$
 
 And then we use the uniform mesh and replace the partial differences with the second-order center difference scheme on the mesh as following:
+
 $$
 \begin{equation}
     \left(\frac{\partial^2 u}{\partial x^2}\right)_{i, j} = \frac{u_{i+1, j} - 2u_{i, j} + u_{i-1, j}}{(\Delta x)^2} 
 \end{equation}
 $$
+
 $$
 \begin{equation}
     \left(\frac{\partial^2 u}{\partial y^2}\right)_{i, j} = \frac{u_{i, j+1} - 2u_{i, j} + u_{i, j-1}}{(\Delta y)^2} 
 \end{equation}
 $$
+
 Suppose $\Delta x = \Delta y = 1$, then we can rewrite the Poisson's equation as:
+
 $$
 \begin{equation}
     4u_{i, j} - u_{i-1, j} - u_{i+1, j} - u_{i, j-1} - u_{i, j+1} = 0
 \end{equation}
 $$
+
 Remember $i, j$ could be any point in the computation domain. So above equation is actually a large sparse systems of equations, and can be solved iteratively using jacobi method:
+
 $$
 \begin{equation}
     u_{i,j}^{n+1} = \left(\frac{u_{i-1, j} + u_{i+1, j} + u_{i, j-1} + u_{i, j+1}}{4} \right)^n
 \end{equation}
 $$
+
 where $n$ is the iteration step. This equation is simple and clear, at every new step, the value of a mesh point is the average of its surrounding points at last step.
 
 In study of heat conduction($u = T$), Laplace equation describe a steady state temperature distribution. If we set the temperature at upper boundary equals 1, and the temperature at other boundary equals 0, the temperature distribution at steady state looks like this:
@@ -105,7 +114,7 @@ But you can see, as we increase the number of processor, the computation cost of
 ![block_division_1d](/assets/block_division_2d.jpg)
 
 
-####  Block index
+###  Block index
 This 2d division method reduce the message passing cost, but increase the program complexity. We give each sub-domain a block index, and assign the rank along y first.
 ```c
 /*  data and block mesh arrangement
@@ -140,7 +149,7 @@ if(block_y == ny_block)
 }
 ```
 
-#### Message exchange
+### Message exchange
 And the message passing becomes more complicated. For each sub-domain, for example, we need to exchange message with its top boundary. We now use its "block index" to identify if it has the top sub-domain and the rank id of its top sub-domain.
 ```c
 /* exchange message with top -- send then receive
@@ -169,7 +178,7 @@ if (block_x < nx_block-1 && block_y < ny_block-1)
 }
 ```
 
-#### Mesh not divisible ?
+### Mesh not divisible ?
 If `nx = 100` and we want to set `nx_block = 3`, what should we do? The answer is simple. We can set first column block `nx = 34`, and all other block `nx = 33`, by following codes:
 ```c
 // divide by column
@@ -198,7 +207,7 @@ const int nx = weight;
 const int ny = height;
 ```
 
-#### Latency hiding by non-block message passing
+### Latency hiding by non-block message passing
 
 The latency of message passing is the worst
 enemy of parallel efficiency when using MPI. A important improvement we can make is to overlap the computation and message passing to hide the latency. So we need to use the non-block message passing function.
