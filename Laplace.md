@@ -31,4 +31,4 @@ permalink: /mpi/jacobi/
 
 <!-- [a link to a note]({% link /assets/notes.pdf %}) -->
 
-[a link to a note](/assets/notes.pdf)
+![a link to a note](/assets/notes.pdf)
