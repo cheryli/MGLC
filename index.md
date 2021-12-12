@@ -10,6 +10,8 @@ title: MGLC
 MGLC(Multi-GPU implementation of Lattice Boltzmann Method for complex flows).
 
 Here we give a detailed introduction to our MGLC project, especially focus on its ***parallel implementation***, if you interest in LBM(lattice Boltzmann method), [refer here to a brief introduction]().
+
+[there is a note of LBM for phase change problems](/assets/notes.pdf).
 ### Markdown
 
 Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
