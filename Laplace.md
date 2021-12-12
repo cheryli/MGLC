@@ -1,7 +1,6 @@
 ---
 layout: default
 title: "MPI parallel of Jacobi iteration"
-permalink: /mpi/jacobi/
 ---
 
 
