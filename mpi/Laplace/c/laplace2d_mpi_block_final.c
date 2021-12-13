@@ -13,6 +13,7 @@
 #define index(x, y, ny) ((x) * (ny) + (y))    // a transform of 2-d array index
 
 double jacobi(double *A, double *A_new, int nx, int ny);
+void swap(double *A, double *A_new, int nx, int ny);
 
 /*  data mesh arrangement
  *  ny
@@ -44,11 +45,17 @@ int main()
     int name_len;
     MPI_Get_processor_name(processor_name, &name_len);
 
-    // divide by row
+    // divide by column
     int weight = total_nx / num_process + 2;
-    if (rank == 0 || rank == num_process-1) // only have one boundary
+    if (rank == 0 || rank == num_process-1) // only have one boundary for message exchange
     {
         weight--;
+    }
+
+    // handle 'Mesh not divisible'
+    if (rank < total_nx % num_process)
+    {
+        weight++;
     }
 
     const int nx = weight;
@@ -60,13 +67,15 @@ int main()
     // initial
     memset(A, 0, nx * ny * sizeof(double));
     memset(A_new, 0, nx * ny * sizeof(double));
+    /* set top boundary = 1.0 */
+    for (int i = 0; i < nx; i++)
+    {
+        A[index(i, ny-1, ny)] = 1.0;
+        A_new[index(i, ny-1, ny)] = 1.0;
+    }
+
     if(rank == 0)
     {
-        for (int i = 0; i < ny; i++)
-        {
-            A[i] = 1.0;
-            A_new[i] = 1.0;
-        }
         printf("Solve 2-D Laplace equation using jacobi relaxation\nmesh size: %d x %d\n", total_nx, total_ny);
         printf("Using %d cores.", num_process);
     }
@@ -78,9 +87,10 @@ int main()
     int itc = 0;
     double error;
     double error_max = 1.0;
-    while (error_max > tolerance && itc < itc_max)
+    while (error_max > tolerance && itc++ < itc_max)
     {
         error = jacobi(A, A_new, nx, ny);
+        swap(A, A_new, nx, ny);
 
         if(rank > 0)
         {
@@ -102,8 +112,6 @@ int main()
         {
             if(itc % 100 == 0) printf("%5d, %0.6f\n", itc, error_max);
         }
-            
-        itc++;
     }
 
 
@@ -136,6 +144,12 @@ double jacobi(double *A, double *A_new, int nx, int ny)
         }
     }
 
+    return error;
+}
+
+
+void swap(double *A, double *A_new, int nx, int ny)
+{
     for (int i = 1; i < nx-1; i++)
     {
         for (int j = 1; j < ny-1; j++)
@@ -143,6 +157,4 @@ double jacobi(double *A, double *A_new, int nx, int ny)
             A[index(i, j, ny)] = A_new[index(i, j, ny)];
         }
     }
-
-    return error;
 }

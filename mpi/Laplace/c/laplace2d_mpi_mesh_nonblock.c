@@ -44,8 +44,8 @@ int main()
     MPI_Get_processor_name(processor_name, &name_len);
 
     /* number of blocks in x and y direction */
-    int nx_block = 9;
-    int ny_block = 1;
+    int nx_block = 4;
+    int ny_block = 4;
 
     /* wrong number of processer */
     if(nx_block * ny_block != num_process) return 1;
@@ -64,6 +64,16 @@ int main()
     if (block_y == 0 || block_y == ny_block-1) // only have one boundary
     {
         height = height - 1;
+    }
+
+    // handle 'Mesh not divisible'
+    if (block_x < total_nx % nx_block)
+    {
+        weight++;
+    }
+    if (block_y < total_ny % ny_block)
+    {
+        height++;
     }
 
     const int nx = weight;
@@ -85,13 +95,13 @@ int main()
     // initial
     memset(A, 0, nx * ny * sizeof(double));
     memset(A_new, 0, nx * ny * sizeof(double));
-    if(block_x == 0)
+    if(block_y == ny_block-1)
     {
-        /* set left column = 1.0 */
+        /* set top boundary = 1.0 */
         for (int i = 0; i < ny; i++)
         {
-            A[i] = 1.0;
-            A_new[i] = 1.0;
+            A[index(i, ny-1, ny)] = 1.0;
+            A_new[index(i, ny-1, ny)] = 1.0;
         }
     }
 
@@ -111,7 +121,7 @@ int main()
     int itc = 0;
     double error, tmp;
     double error_max = 1.0;
-    while (error_max > tolerance && itc < itc_max)
+    while (error_max > tolerance && itc++ < itc_max)
     {
         error = 0.0;
         MPI_Request req_tops, req_topr, req_bots, req_botr, req_lefs, req_lefr, req_rigs, req_rigr;
@@ -285,8 +295,6 @@ int main()
         {
             if(itc % 100 == 0) printf("%5d, %0.6f\n", itc, error_max);
         }
-            
-        itc++;
     }
 
 

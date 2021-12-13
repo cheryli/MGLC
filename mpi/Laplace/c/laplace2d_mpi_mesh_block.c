@@ -14,6 +14,7 @@
 #define index(x, y, ny) ((x) * (ny) + (y))    // a transform of 2-d array index
 
 double jacobi(double *A, double *A_new, int nx, int ny);
+void swap(double *A, double *A_new, int nx, int ny);
 
 /*  data and block mesh arrangement
  *  ny
@@ -44,8 +45,8 @@ int main()
     MPI_Get_processor_name(processor_name, &name_len);
 
     /* number of blocks in x and y direction */
-    int nx_block = 16;
-    int ny_block = 1;
+    int nx_block = 4;
+    int ny_block = 4;
 
     /* wrong number of processer */
     if(nx_block * ny_block != num_process) return 1;
@@ -66,32 +67,39 @@ int main()
         height = height - 1;
     }
 
+    // handle 'Mesh not divisible'
+    if (block_x < total_nx % nx_block)
+    {
+        weight++;
+    }
+    if (block_y < total_ny % ny_block)
+    {
+        height++;
+    }
+
     const int nx = weight;
     const int ny = height;
     
     double * A = (double *)malloc(sizeof(double) * nx * ny);
     double * A_new = (double *)malloc(sizeof(double) * nx * ny);
 
-    double * sender_top = (double *)malloc(sizeof(double) * nx);
-    double * sender_bottom = (double *)malloc(sizeof(double) * nx);
-    // double * sender_left = (double *)malloc(sizeof(double) * ny);
-    // double * sender_right = (double *)malloc(sizeof(double) * ny);
+    /* send and receive buffer */
+    double * sender_tb = (double *)malloc(sizeof(double) * nx);
+    // double * sender_lr = (double *)malloc(sizeof(double) * ny);
 
-    double * receiver_top = (double *)malloc(sizeof(double) * nx);
-    double * receiver_bottom = (double *)malloc(sizeof(double) * nx);
-    // double * receiver_left = (double *)malloc(sizeof(double) * ny);
-    // double * receiver_right = (double *)malloc(sizeof(double) * ny);
+    double * receiver_tb = (double *)malloc(sizeof(double) * nx);
+    // double * receiver_lr = (double *)malloc(sizeof(double) * ny);
 
     // initial
     memset(A, 0, nx * ny * sizeof(double));
     memset(A_new, 0, nx * ny * sizeof(double));
-    if(block_x == 0)
+    if(block_y == ny_block-1)
     {
-        /* set left column = 1.0 */
+        /* set top boundary = 1.0 */
         for (int i = 0; i < ny; i++)
         {
-            A[i] = 1.0;
-            A_new[i] = 1.0;
+            A[index(i, ny-1, ny)] = 1.0;
+            A_new[index(i, ny-1, ny)] = 1.0;
         }
     }
 
@@ -111,9 +119,10 @@ int main()
     int itc = 0;
     double error, tmp;
     double error_max = 1.0;
-    while (error_max > tolerance && itc < itc_max)
+    while (error_max > tolerance && itc++ < itc_max)
     {
         error = jacobi(A, A_new, nx, ny);
+        swap(A, A_new, nx, ny);
 
         /* exchange message with right -- send then receive
          * message tag: 0 - message from/to left; 1 - message from/to right (for sender) */
@@ -137,13 +146,13 @@ int main()
         {
             for (int i = 1; i < nx-1; i++)
             {
-                sender_top[i] = A[index(i, ny-2, ny)];
+                sender_tb[i] = A[index(i, ny-2, ny)];
             }
-            MPI_Send(sender_top+1, nx - 2, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD);
-            MPI_Recv(receiver_top+1, nx - 2, MPI_DOUBLE, rank+1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Send(sender_tb+1, nx - 2, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD);
+            MPI_Recv(receiver_tb+1, nx - 2, MPI_DOUBLE, rank+1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             for (int i = 1; i < nx-1; i++)
             {
-                A[index(i, ny-1, ny)] = receiver_top[i];
+                A[index(i, ny-1, ny)] = receiver_tb[i];
             }
         }
 
@@ -153,13 +162,13 @@ int main()
         {
             for (int i = 1; i < nx-1; i++)
             {
-                sender_bottom[i] = A[index(i, 1, ny)];
+                sender_tb[i] = A[index(i, 1, ny)];
             }
-            MPI_Recv(receiver_bottom+1, nx - 2, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            MPI_Send(sender_bottom+1, nx - 2, MPI_DOUBLE, rank-1, 0, MPI_COMM_WORLD);
+            MPI_Recv(receiver_tb+1, nx - 2, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Send(sender_tb+1, nx - 2, MPI_DOUBLE, rank-1, 0, MPI_COMM_WORLD);
             for (int i = 1; i < nx-1; i++)
             {
-                A[index(i, 0, ny)] = receiver_bottom[i];
+                A[index(i, 0, ny)] = receiver_tb[i];
             }
         }
 
@@ -201,8 +210,6 @@ int main()
         {
             if(itc % 100 == 0) printf("%5d, %0.6f\n", itc, error_max);
         }
-            
-        itc++;
     }
 
 
@@ -236,6 +243,11 @@ double jacobi(double *A, double *A_new, int nx, int ny)
         }
     }
 
+    return error;
+}
+
+void swap(double *A, double *A_new, int nx, int ny)
+{
     for (int i = 1; i < nx-1; i++)
     {
         for (int j = 1; j < ny-1; j++)
@@ -243,6 +255,4 @@ double jacobi(double *A, double *A_new, int nx, int ny)
             A[index(i, j, ny)] = A_new[index(i, j, ny)];
         }
     }
-
-    return error;
 }
