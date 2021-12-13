@@ -66,7 +66,7 @@ We use two arrays namely `A` and `A_new` to store the temperature matrix. And fo
 ```c
 #define index(x, y, ny) ((x) * (ny) + (y))    // a transform of 2-d array index
 ```
-Then the main iteration process is putted into a single `jacobi` function:
+Then the main iteration process is putted into a single `jacobi` function, and after each iteration step, we need to swap `A` and `A_new` by `swap` function:
 ```c
 double jacobi(double *A, double *A_new, int nx, int ny)
 {
@@ -82,6 +82,11 @@ double jacobi(double *A, double *A_new, int nx, int ny)
         }
     }
 
+    return error;
+}
+
+void swap(double *A, double *A_new, int nx, int ny)
+{
     for (int i = 1; i < nx-1; i++)
     {
         for (int j = 1; j < ny-1; j++)
@@ -89,16 +94,17 @@ double jacobi(double *A, double *A_new, int nx, int ny)
             A[index(i, j, ny)] = A_new[index(i, j, ny)];
         }
     }
-
-    return error;
 }
 ```
 
 And what the `main` function do is simply `initial` the value, and then do the iteration until reach to its convergence or maximum iteration step.
 ```c
-while (error_max > tolerance && itc < itc_max)
+while (error_max > tolerance && itc++ < itc_max)
 {
     error = jacobi(A, A_new, nx, ny);
+    swap(A, A_new, nx, ny);
+
+    if(itc % 100 == 0) printf("%5d, %0.6f\n", itc, error);
 }
 ```
 
@@ -150,7 +156,7 @@ if(block_y == ny_block)
 ```
 
 ### Message exchange
-And the message passing becomes more complicated. For each sub-domain, for example, we need to exchange message with its top boundary. We now use its "block index" to identify if it has the top sub-domain and the rank id of its top sub-domain.
+And the message passing becomes more complicated. For each sub-domain, for example, we need to exchange message with its top boundary. We now use its "block index" to identify if it has the top sub-domain and the rank id of its top sub-domain. And because the points at top boundary are discontinuous in virtual memory, we need a buffer `sender_tb` and `receiver_tb`:
 ```c
 /* exchange message with top -- send then receive
   * message tag: 0 - message from/to bottom; 1 - message from/to top (for sender) */
@@ -158,13 +164,13 @@ if (block_y < ny_block-1)
 {
     for (int i = 1; i < nx-1; i++)
     {
-        sender_top[i] = A[index(i, ny-2, ny)];
+        sender_tb[i] = A[index(i, ny-2, ny)];
     }
-    MPI_Send(sender_top+1, nx - 2, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD);
-    MPI_Recv(receiver_top+1, nx - 2, MPI_DOUBLE, rank+1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Send(sender_tb+1, nx - 2, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD);
+    MPI_Recv(receiver_tb+1, nx - 2, MPI_DOUBLE, rank+1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     for (int i = 1; i < nx-1; i++)
     {
-        A[index(i, ny-1, ny)] = receiver_top[i];
+        A[index(i, ny-1, ny)] = receiver_tb[i];
     }
 }
 ```
@@ -194,11 +200,11 @@ if (block_y == 0 || block_y == ny_block-1) // only have one boundary
 }
 
 // handle 'Mesh not divisible'
-if (block_x <= total_nx % nx_block)
+if (block_x < total_nx % nx_block)
 {
     weight++;
 }
-if (block_y <= total_ny % ny_block)
+if (block_y < total_ny % ny_block)
 {
     height++;
 }
