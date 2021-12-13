@@ -60,7 +60,7 @@ In study of heat conduction($u = T$), Laplace equation describe a steady state t
 ![laplace-steady-state](/assets/laplace.jpg)
 
 ## Code structure of serial program
-It's quite a simple problem, you can view the serial code [here](). 
+It's quite a simple problem, you can view the serial code here: [laplace2d.c](https://github.com/cheryli/MGLC/blob/master/mpi/Laplace/c/laplace2d.c). 
 
 We use two arrays namely `A` and `A_new` to store the temperature matrix. And for simplicity, we define a macro in C language to index a two dimension array.
 ```c
@@ -109,7 +109,7 @@ while (error_max > tolerance && itc++ < itc_max)
 ```
 
 ## MPI parallelization of jacobi iteration
-One way to accelerate above serial program on multi-processor systems is MPI(Message Passing Interface). And we will introduce the block division and latency hiding of this MPI implementation.
+One way to accelerate above serial program on multi-processor systems is MPI(Message Passing Interface). And we will introduce the block division and latency hiding of this MPI implementation. [refer here to mpi codes](https://github.com/cheryli/MGLC/tree/master/mpi/Laplace/c)
 
 we will start with the blocked version(without latency hiding). The idea is, as illustration,we can divide the computation domain into many sub-domains, and each processor will handle one sub-domain. The update of inner points is easy and totally local, but the update of boundary points acquires the information of other sub-domains. So we need a layer of ghost points to exchange messages after every steps of iteration.
 
