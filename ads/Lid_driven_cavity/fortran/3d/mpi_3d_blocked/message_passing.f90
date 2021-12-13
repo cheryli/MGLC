@@ -14,6 +14,19 @@ subroutine message_passing()
 
     ! we don't need to exchange fp for cornor points
 
+    integer :: buffer_size, max_size, s1
+    character, allocatable :: buffer(:)
+
+    max_size = 5 * max(max(nx*ny, nx*nz), ny*nz)
+
+    call MPI_Pack_size(max_size, MPI_DOUBLE_PRECISION, MPI_COMM_WORLD, s1, rc)
+
+    buffer_size = 2 * MPI_BSEND_OVERHEAD + s1;
+
+    allocate(buffer(buffer_size))
+
+    call MPI_Buffer_attach(buffer, buffer_size, rc)
+
 
     !!! /* ------------- exchange message with surfaces ----------------- 
     !!!    message tag(for sender):  1 -> i=1  /  2 -> i=nx   /  3 -> j=1  /
@@ -32,7 +45,7 @@ subroutine message_passing()
             enddo
         enddo
 
-        call MPI_Send(fps_send_i, 5*ny*nz, MPI_DOUBLE_PRECISION, rank-1, 1, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fps_send_i, 5*ny*nz, MPI_DOUBLE_PRECISION, rank-1, 1, MPI_COMM_WORLD, rc)
         call MPI_Recv(fps_recv_i, 5*ny*nz, MPI_DOUBLE_PRECISION, rank-1, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
                 
         ! scatter the received data (i=0)
@@ -60,9 +73,9 @@ subroutine message_passing()
             enddo
         enddo
 
+        call MPI_Bsend(fps_send_i, 5*ny*nz, MPI_DOUBLE_PRECISION, rank+1, 2, MPI_COMM_WORLD, rc)
         call MPI_Recv(fps_recv_i, 5*ny*nz, MPI_DOUBLE_PRECISION, rank+1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
-        call MPI_Send(fps_send_i, 5*ny*nz, MPI_DOUBLE_PRECISION, rank+1, 2, MPI_COMM_WORLD, rc)
-                
+        
         ! scatter the received data (i=nx+1)
         do k = 1, nz
             do j = 1, ny
@@ -88,7 +101,7 @@ subroutine message_passing()
             enddo
         enddo
 
-        call MPI_Send(fps_send_j, 5*nx*nz, MPI_DOUBLE_PRECISION, rank-nx_block, 3, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fps_send_j, 5*nx*nz, MPI_DOUBLE_PRECISION, rank-nx_block, 3, MPI_COMM_WORLD, rc)
         call MPI_Recv(fps_recv_j, 5*nx*nz, MPI_DOUBLE_PRECISION, rank-nx_block, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
                 
         ! scatter the received data (j=0)
@@ -116,7 +129,7 @@ subroutine message_passing()
             enddo
         enddo
 
-        call MPI_Send(fps_send_j, 5*nx*nz, MPI_DOUBLE_PRECISION, rank+nx_block, 4, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fps_send_j, 5*nx*nz, MPI_DOUBLE_PRECISION, rank+nx_block, 4, MPI_COMM_WORLD, rc)
         call MPI_Recv(fps_recv_j, 5*nx*nz, MPI_DOUBLE_PRECISION, rank+nx_block, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
                 
         ! scatter the received data (j=ny+1)
@@ -144,7 +157,7 @@ subroutine message_passing()
             enddo
         enddo
 
-        call MPI_Send(fps_send_k, 5*nx*ny, MPI_DOUBLE_PRECISION, rank - nx_block*ny_block, 5, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fps_send_k, 5*nx*ny, MPI_DOUBLE_PRECISION, rank - nx_block*ny_block, 5, MPI_COMM_WORLD, rc)
         call MPI_Recv(fps_recv_k, 5*nx*ny, MPI_DOUBLE_PRECISION, rank - nx_block*ny_block, 6, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
                 
         ! scatter the received data (k=0)
@@ -172,7 +185,7 @@ subroutine message_passing()
             enddo
         enddo
 
-        call MPI_Send(fps_send_k, 5*nx*ny, MPI_DOUBLE_PRECISION, rank + nx_block*ny_block, 6, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fps_send_k, 5*nx*ny, MPI_DOUBLE_PRECISION, rank + nx_block*ny_block, 6, MPI_COMM_WORLD, rc)
         call MPI_Recv(fps_recv_k, 5*nx*ny, MPI_DOUBLE_PRECISION, rank + nx_block*ny_block, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
                 
         ! scatter the received data(k=nz+1)
@@ -196,7 +209,7 @@ subroutine message_passing()
             fpl_send_z(k) = f_post(7, nx, ny, k)
         enddo
 
-        call MPI_Send(fpl_send_z, nz, MPI_DOUBLE_PRECISION, rank + nx_block + 1, 7, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fpl_send_z, nz, MPI_DOUBLE_PRECISION, rank + nx_block + 1, 7, MPI_COMM_WORLD, rc)
         call MPI_Recv(fpl_recv_z, nz, MPI_DOUBLE_PRECISION, rank + nx_block + 1, 10, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
         
         ! scatter the received data (i=nx+1, j=ny+1)
@@ -212,7 +225,7 @@ subroutine message_passing()
             fpl_send_z(k) = f_post(8, 1, ny, k)
         enddo
 
-        call MPI_Send(fpl_send_z, nz, MPI_DOUBLE_PRECISION, rank + nx_block - 1, 8, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fpl_send_z, nz, MPI_DOUBLE_PRECISION, rank + nx_block - 1, 8, MPI_COMM_WORLD, rc)
         call MPI_Recv(fpl_recv_z, nz, MPI_DOUBLE_PRECISION, rank + nx_block - 1, 9, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
 
         ! scatter the received data (i=0, j=ny+1)
@@ -228,7 +241,7 @@ subroutine message_passing()
             fpl_send_z(k) = f_post(9, nx, 1, k)
         enddo
 
-        call MPI_Send(fpl_send_z, nz, MPI_DOUBLE_PRECISION, rank - nx_block + 1, 9, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fpl_send_z, nz, MPI_DOUBLE_PRECISION, rank - nx_block + 1, 9, MPI_COMM_WORLD, rc)
         call MPI_Recv(fpl_recv_z, nz, MPI_DOUBLE_PRECISION, rank - nx_block + 1, 8, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
 
         ! scatter the received data (i=nx+1, j=0)
@@ -244,7 +257,7 @@ subroutine message_passing()
             fpl_send_z(k) = f_post(10, 1, 1, k)
         enddo
 
-        call MPI_Send(fpl_send_z, nz, MPI_DOUBLE_PRECISION, rank - nx_block - 1, 10, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fpl_send_z, nz, MPI_DOUBLE_PRECISION, rank - nx_block - 1, 10, MPI_COMM_WORLD, rc)
         call MPI_Recv(fpl_recv_z, nz, MPI_DOUBLE_PRECISION, rank - nx_block - 1, 7, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
 
         ! scatter the received data (i=0, j=0)
@@ -260,7 +273,7 @@ subroutine message_passing()
             fpl_send_y(j) = f_post(11, nx, j, nz)
         enddo
 
-        call MPI_Send(fpl_send_y, ny, MPI_DOUBLE_PRECISION, rank + nx_block*ny_block + 1, 11, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fpl_send_y, ny, MPI_DOUBLE_PRECISION, rank + nx_block*ny_block + 1, 11, MPI_COMM_WORLD, rc)
         call MPI_Recv(fpl_recv_y, ny, MPI_DOUBLE_PRECISION, rank + nx_block*ny_block + 1, 14, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
 
         ! scatter the received data (i=nx+1, k=nz+1)
@@ -276,7 +289,7 @@ subroutine message_passing()
             fpl_send_y(j) = f_post(12, 1, j, nz)
         enddo
 
-        call MPI_Send(fpl_send_y, ny, MPI_DOUBLE_PRECISION, rank + nx_block*ny_block - 1, 12, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fpl_send_y, ny, MPI_DOUBLE_PRECISION, rank + nx_block*ny_block - 1, 12, MPI_COMM_WORLD, rc)
         call MPI_Recv(fpl_recv_y, ny, MPI_DOUBLE_PRECISION, rank + nx_block*ny_block - 1, 13, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
 
         ! scatter the received data (i=0, k=nz+1)
@@ -292,7 +305,7 @@ subroutine message_passing()
             fpl_send_y(j) = f_post(13, nx, j, 1)
         enddo
 
-        call MPI_Send(fpl_send_y, ny, MPI_DOUBLE_PRECISION, rank - nx_block*ny_block + 1, 13, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fpl_send_y, ny, MPI_DOUBLE_PRECISION, rank - nx_block*ny_block + 1, 13, MPI_COMM_WORLD, rc)
         call MPI_Recv(fpl_recv_y, ny, MPI_DOUBLE_PRECISION, rank - nx_block*ny_block + 1, 12, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
 
         ! scatter the received data (i=nx+1, k=0)
@@ -308,7 +321,7 @@ subroutine message_passing()
             fpl_send_y(j) = f_post(14, 1, j, 1)
         enddo
 
-        call MPI_Send(fpl_send_y, ny, MPI_DOUBLE_PRECISION, rank - nx_block*ny_block - 1, 14, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fpl_send_y, ny, MPI_DOUBLE_PRECISION, rank - nx_block*ny_block - 1, 14, MPI_COMM_WORLD, rc)
         call MPI_Recv(fpl_recv_y, ny, MPI_DOUBLE_PRECISION, rank - nx_block*ny_block - 1, 11, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
 
         ! scatter the received data (i=0, k=0)
@@ -324,7 +337,7 @@ subroutine message_passing()
             fpl_send_x(i) = f_post(15, i, ny, nz)
         enddo
 
-        call MPI_Send(fpl_send_x, nx, MPI_DOUBLE_PRECISION, rank + nx_block + nx_block*ny_block, 15, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fpl_send_x, nx, MPI_DOUBLE_PRECISION, rank + nx_block + nx_block*ny_block, 15, MPI_COMM_WORLD, rc)
         call MPI_Recv(fpl_recv_x, nx, MPI_DOUBLE_PRECISION, rank + nx_block + nx_block*ny_block, 18, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
 
         ! scatter the received data (j=ny+1, k=nz+1)
@@ -340,7 +353,7 @@ subroutine message_passing()
             fpl_send_x(i) = f_post(16, i, 1, nz)
         enddo
 
-        call MPI_Send(fpl_send_x, nx, MPI_DOUBLE_PRECISION, rank - nx_block + nx_block*ny_block, 16, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fpl_send_x, nx, MPI_DOUBLE_PRECISION, rank - nx_block + nx_block*ny_block, 16, MPI_COMM_WORLD, rc)
         call MPI_Recv(fpl_recv_x, nx, MPI_DOUBLE_PRECISION, rank - nx_block + nx_block*ny_block, 17, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
 
         ! scatter the received data (j=0, k=nz+1)
@@ -356,7 +369,7 @@ subroutine message_passing()
             fpl_send_x(i) = f_post(17, i, ny, 1)
         enddo
 
-        call MPI_Send(fpl_send_x, nx, MPI_DOUBLE_PRECISION, rank + nx_block - nx_block*ny_block, 17, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fpl_send_x, nx, MPI_DOUBLE_PRECISION, rank + nx_block - nx_block*ny_block, 17, MPI_COMM_WORLD, rc)
         call MPI_Recv(fpl_recv_x, nx, MPI_DOUBLE_PRECISION, rank + nx_block - nx_block*ny_block, 16, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
 
         ! scatter the received data (j=ny+1, k=0)
@@ -372,7 +385,7 @@ subroutine message_passing()
             fpl_send_x(i) = f_post(18, i, 1, 1)
         enddo
 
-        call MPI_Send(fpl_send_x, nx, MPI_DOUBLE_PRECISION, rank - nx_block - nx_block*ny_block, 18, MPI_COMM_WORLD, rc)
+        call MPI_Bsend(fpl_send_x, nx, MPI_DOUBLE_PRECISION, rank - nx_block - nx_block*ny_block, 18, MPI_COMM_WORLD, rc)
         call MPI_Recv(fpl_recv_x, nx, MPI_DOUBLE_PRECISION, rank - nx_block - nx_block*ny_block, 15, MPI_COMM_WORLD, MPI_STATUS_IGNORE, rc)
 
         ! scatter the received data (j=0, k=0)
@@ -381,5 +394,8 @@ subroutine message_passing()
         enddo
     endif
 
+    call MPI_Buffer_detach(buffer, buffer_size, rc)
+    
+    deallocate(buffer)
 
 end subroutine message_passing

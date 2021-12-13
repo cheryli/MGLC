@@ -58,7 +58,7 @@ program main
     real(8) :: start_time, end_time
     integer :: name_len
     character(len=MPI_MAX_PROCESSOR_NAME) :: processor_name
-
+ 
     call MPI_Init(rc)
 
     call MPI_Comm_size(MPI_COMM_WORLD, num_process, rc)
