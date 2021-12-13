@@ -248,12 +248,3 @@ if (rank > 0)
 
 
 
-
-
-
-test
-
-
-![this is a link to a wallpaper](/assets/wallpaper-1.jpg)
-
-
