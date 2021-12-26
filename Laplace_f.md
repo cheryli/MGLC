@@ -63,8 +63,7 @@ Poisson方程在一些情况下有简单的解析解，例如我们设域内 $f(
 
 而当我们考虑热传导问题时 ($u = T$)，Laplace方程描述了在给定边界温度条件下，内部区域处于稳态时的温度分布。如果我们设上边界处温度为 1，其余边界温度为 0。那么稳态下温度分布如下：
 
-<!-- ![laplace-steady-state](/assets/laplace.jpg) -->
-<div align=center><img src="/assets/laplace.jpg"/></div>
+![laplace-steady-state](/assets/laplace.jpg)
 
 ## Jacobi迭代的串行程序
 这个问题的求解非常简单，你可以直接参考串行代码: [laplace2d.c](https://github.com/cheryli/MGLC/blob/master/mpi/Laplace/c/laplace2d.c). 
