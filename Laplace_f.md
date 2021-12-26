@@ -66,7 +66,7 @@ Poisson方程在一些情况下有简单的解析解，例如我们设域内 $f(
 ![laplace-steady-state](/assets/laplace.jpg)
 
 ## Jacobi迭代的串行程序
-这个问题的求解非常简单，你可以直接参考串行代码: [laplace2d.c](https://github.com/cheryli/MGLC/blob/master/mpi/Laplace/fortran/jacobi2d.f90). 
+这个问题的求解非常简单，你可以直接参考串行代码: [jacobi2d.f90](https://github.com/cheryli/MGLC/blob/master/mpi/Laplace/fortran/jacobi2d.f90). 
 
 我们使用两个二维数组 `A` 和 `A_new` 来分别储存不同时间步上网格的温度值。网格的排列如代码中注释所写：
 ```fortran
