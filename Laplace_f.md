@@ -206,9 +206,10 @@ $$
 
 通常而言，我们认为每个节点的计算耗时远远小于通信耗时，例如我们设 $f = 1$, $s = r = 10$。我们在下图给出了1维分割和二维分割并行效率的对比：
 
-![efficiency of 1d decomposition](\assets\eff1d.jpg)
+![efficiency of 1d decomposition](\assets\eff_1d.jpg)
 
-![efficiency of 2d decomposition](\assets\eff2d.jpg)
+![efficiency of 2d decomposition](\assets\eff_2d.jpg)
+
 可以看到，在网格数目很多时，使用 1 维分割的并行效率很低，但此时二维分割仍旧有着很高的并行效率。
 
 
