@@ -66,7 +66,7 @@ Poisson方程在一些情况下有简单的解析解，例如我们设域内 $f(
 ![laplace-steady-state](/assets/laplace.jpg)
 
 ## Jacobi迭代的串行程序
-这个问题的求解非常简单，你可以直接参考串行代码: [laplace2d.c](https://github.com/cheryli/MGLC/blob/master/mpi/Laplace/c/laplace2d.c). 
+这个问题的求解非常简单，你可以直接参考串行代码: [laplace2d.c](https://github.com/cheryli/MGLC/blob/master/mpi/Laplace/fortran/jacobi2d.f90). 
 
 我们使用两个二维数组 `A` 和 `A_new` 来分别储存不同时间步上网格的温度值。网格的排列如代码中注释所写：
 ```fortran
@@ -132,7 +132,7 @@ enddo
 检测收敛的方法很多，这里选择比较不同时间步 `A` 差的绝对值，并判断其最大值是否小于收敛条件。 
 
 ## 雅可比迭代的MPI并行实现
-在多核系统上加速上述代码的一种方法是使用MPI(Message Passing Interface)。使用MPI，我们可以将计算域分割为多个子计算域，每个处理器(核)负责一个子计算域的计算，MPI来处理计算域之间的信息同步。MPI并行的程序可以从这里获得： [refer here to mpi codes](https://github.com/cheryli/MGLC/tree/master/mpi/Laplace/c)
+在多核系统上加速上述代码的一种方法是使用MPI(Message Passing Interface)。使用MPI，我们可以将计算域分割为多个子计算域，每个处理器(核)负责一个子计算域的计算，MPI来处理计算域之间的信息同步。MPI并行的程序可以从这里获得： [refer here to mpi codes](https://github.com/cheryli/MGLC/tree/master/mpi/Laplace/fortran)
 
 计算域的分割是MPI并行最重要的部分之一。对于这个均匀网格上的简答迭代问题，分割计算域需要考虑的问题也比较少。我们首先假设每个并行处理器的计算性能相同，那么只需要尽可能地平均分割计算域就可以实现负载均衡。考虑到在串行程序里，网格点是按行排列的，我们这里也优先考虑按行分割计算域如下图。然后将每个子计算域分配给处理器，这些处理器同时且独立地对自己所属的子计算域进行Jacobi迭代更新。但注意到，这些计算域的更新只有内点是全然局部的(只需要当前子计算域的值)，而上下边界的计算就需要用到相邻计算域的值。因此我们需要在上下边界处各布置一层虚拟节点(ghost points)。每个子计算域更新边界点前需要先从相邻计算域接受边界信息储存到虚拟节点上，并且将改边界节点的值发送给相邻计算域的虚拟节点。
 
