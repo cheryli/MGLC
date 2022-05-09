@@ -1,0 +1,54 @@
+.SUFFIXES:
+FC = mpiifort
+
+objects = commondata.o main.o initial.o fluid.o particle_force.o particle_update.o  \
+	 message_exc.o output.o freeall.o particle_bounceback.o send_all.o message_particle.o
+
+macros = -DstationaryFrame -Dlinear
+
+mpi_test : $(objects)
+	$(FC) $(macros) -o mpi_test $(objects)
+
+commondata.o : commondata.F90 commondata.mod
+	$(FC) $(macros) -c commondata.F90
+
+main.o : main.F90 commondata.mod
+	$(FC) $(macros) -c main.F90
+
+initial.o : initial.F90 commondata.mod 
+	$(FC) $(macros) -c initial.F90
+
+fluid.o : fluid.F90 commondata.mod
+	$(FC) $(macros) -c fluid.F90 
+
+message_exc.o : message_exc.F90 commondata.mod
+	$(FC) $(macros) -c message_exc.F90 
+
+output.o : output.F90 commondata.mod
+	$(FC) $(macros) -c output.F90 
+
+freeall.o : freeall.F90 commondata.mod
+	$(FC) $(macros) -c freeall.F90
+
+particle_force.o : particle_force.F90 commondata.mod
+	$(FC) $(macros) -c particle_force.F90
+
+particle_update.o : particle_update.F90 commondata.mod
+	$(FC) $(macros) -c particle_update.F90
+
+particle_bounceback.o : particle_bounceback.F90 commondata.mod
+	$(FC) $(macros) -c particle_bounceback.F90
+
+send_all.o : send_all.F90 commondata.mod
+	$(FC) $(macros) -c send_all.F90
+
+message_particle.o : message_particle.F90 commondata.mod
+	$(FC) $(macros) -c message_particle.F90
+
+
+.PHONY : clean  clean_all
+clean :
+	rm -f mpi_test $(objects) 
+
+clean_all: 
+	rm -f *.plt *.dat mpi_test  $(objects) 

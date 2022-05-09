@@ -3,7 +3,7 @@ subroutine bounceback()
     implicit none
     integer :: i, j, k
 
-    if (block_x == 1) then
+    if (coords(0) == 0) then
         do k = 1, nz
             do j = 1, ny
                 ! (i = 1)
@@ -16,7 +16,7 @@ subroutine bounceback()
         enddo
     endif
 
-    if (block_x == nx_block) then
+    if (coords(0) == dims(0)-1) then
         do k = 1, nz
             do j = 1, ny
                 !(i = nx)
@@ -30,7 +30,7 @@ subroutine bounceback()
     endif
 
 
-    if (block_y == 1) then
+    if (coords(1) == 0) then
         do k = 1, nz
             do i = 1, nx
                 !(j = 1)
@@ -43,7 +43,7 @@ subroutine bounceback()
         enddo
     endif
 
-    if (block_y == ny_block) then
+    if (coords(1) == dims(1)-1) then
         do k = 1, nz
             do i = 1, nx
                 !(j = ny)
@@ -56,7 +56,7 @@ subroutine bounceback()
         enddo
     endif
 
-    if (block_z == 1) then
+    if (coords(2) == 0) then
         do j = 1, ny
             do i = 1, nx
                 ! (k = 1)
@@ -69,7 +69,7 @@ subroutine bounceback()
         enddo
     endif
 
-    if (block_z == nz_block) then
+    if (coords(2) == dims(2)-1) then
         do j = 1, ny
             do i = 1, nx
                 ! (k = nz)

@@ -22,14 +22,14 @@ subroutine check()
     vp = v
     wp = w
 
-    call MPI_Barrier(MPI_COMM_WORLD, rc)
+    call MPI_Barrier(comm3d, rc)
 
-    call MPI_ALLreduce(error1, total_error1, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, rc)
-    call MPI_ALLreduce(error2, total_error2, 1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, rc)
+    call MPI_ALLreduce(error1, total_error1, 1, MPI_REAL8, MPI_SUM, comm3d, rc)
+    call MPI_ALLreduce(error2, total_error2, 1, MPI_REAL8, MPI_SUM, comm3d, rc)
 
     errorU = sqrt(total_error1)/sqrt(total_error2)
 
-    if (rank == 0) then
+    if (rank3d == 0) then
         write(*,*) itc,' ',errorU
     endif
 

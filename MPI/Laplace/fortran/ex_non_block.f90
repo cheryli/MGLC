@@ -4,7 +4,7 @@ subroutine exchange_message_nonblock(A, nx, ny, coords, comm2d, column_y, nbr_le
     integer, intent(in) :: nx, ny, comm2d, column_y, coords(2)
     integer, intent(in) :: nbr_left, nbr_right, nbr_top, nbr_bottom
     real(8), intent(in) :: A(0:nx+1, 0:ny+1)
-    integer :: i, j, rc, req(8)
+    integer :: rc, req(8)
 
     ! corners don't matter in this problem
 

@@ -16,18 +16,18 @@ subroutine initial()
     endif
 
     xp(0) = 0.0d0
-    xp(nx+1) = dble(nx)
-    do i=1,nx
+    xp(total_nx+1) = dble(total_nx)
+    do i=1,total_nx
         xp(i) = dble(i)-0.5d0
     enddo
     yp(0) = 0.0d0
-    yp(ny+1) = dble(ny)
-    do j=1,ny
+    yp(total_ny+1) = dble(total_ny)
+    do j=1,total_ny
         yp(j) = dble(j)-0.5d0
     enddo
     zp(0) = 0.0d0
-    zp(nz+1) = dble(nz)
-    do k=1,nz
+    zp(total_nz+1) = dble(total_nz)
+    do k=1,total_nz
         zp(k) = dble(k)-0.5d0
     enddo
 
@@ -51,7 +51,8 @@ subroutine initial()
     vp = 0.0d0
     wp = 0.0d0
 
-    if (block_z == nz_block) then
+    ! top bpundary
+    if (coords(2) == dims(2) - 1) then
         do j = 1, ny
             do i = 1, nx
                 u(i, j, nz) = U0
