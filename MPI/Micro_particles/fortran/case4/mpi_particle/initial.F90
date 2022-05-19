@@ -6,6 +6,8 @@ subroutine initial()
     real(8) :: un(0:8)
     real(8) :: us2
     integer :: cNum
+    real(8) :: tmpx, tmpy, rdx, rdy
+    integer :: particle_num, particle_start
 
     
 if(rank == 0) then
@@ -20,8 +22,11 @@ if(rank == 0) then
     write(*,*) "tauf=",real(tauf)
     write(*,*) "gravity=",real(gravity)
     write(*,*) "    "
-    write(*,*) "wallStiff=",real(wallStiff)
-    write(*,*) "thresholdR=",real(thresholdR)
+    write(*,*) "thresholdWall=",real(thresholdWall)
+    write(*,*) "stiffWall=",real(stiffWall)
+    write(*,*) "    "
+    write(*,*) "thresholdParticle=",real(thresholdParticle)
+    write(*,*) "stiffParticle=",real(stiffParticle)
     write(*,*) "    "
 
 endif
@@ -29,28 +34,59 @@ endif
     itc = 0
     errorU = 100.0d0
 
-    radius(1) = dble(radius0)
+    ! define mesh
+
+    do i=1,total_nx
+        X(i) = dble(i-1)
+    enddo
+    do j=1,total_ny
+        Y(j) = dble(j-1)
+    enddo
+
+    tmpx = 25.0d0
+    tmpy = 25.0d0
+
+    do cNum = 1, cNumMax
+        call random_number(rdx)
+        call random_number(rdy)
+
+        xCenter(cNum) = tmpx + (rdx - 0.5d0) * 20
+        yCenter(cNum) = tmpy + (rdy - 0.5d0) * 20
+
+        tmpx = tmpx + 50.0d0
+
+        if (tmpx > 200.0d0) then
+            tmpx = 25.0d0
+            tmpy = tmpy + 50.0d0
+        endif
+    enddo
+
+    ! xCenter(1) = 101.01d0
+    ! yCenter(1) = 720.00d0
+    ! xCenter(2) = 101.0d0
+    ! yCenter(2) = 680.0d0
+
+    xCenterOld = xCenter
+    yCenterOld = yCenter
+
+    radius = dble(radius0)
+
     if(rank == 0) then
         do cNum=1,cNumMax
+            write(*,*) "I am particle ", cNum
+            write(*,*) "xCenter =", real(xCenter(cNum)), ",    yCenter =", real(yCenter(cNum))
             write(*,*) "diameter=",real(2.0d0*radius(cNum))
+            write(*,*) "    "
         enddo
     endif
 
-    ! define mesh
-    if (rank == 0) then
-        do i=1,total_nx
-            X(i) = dble(i-1)
-        enddo
-        do j=1,total_ny
-            Y(j) = dble(j-1)
-        enddo
-    endif
+    Uc = 0.0d0
+    Vc = 0.0d0
+    rationalOmega = 0.0d0
 
-    xCenter(1) = 101.0d0
-    yCenter(1) = 401.0d0
-    Uc(1) = 0.0d0
-    Vc(1) = 0.0d0
-    rationalOmega(1) = 0.0d0
+    UcOld = 0.0d0
+    VcOld = 0.0d0
+    rationalOmegaOld = 0.0d0
 
     obst = 0
     obstNew = 0
@@ -75,6 +111,7 @@ endif
         enddo
     enddo
 
+
     u = 0.0d0
     v = 0.0d0
 
@@ -90,6 +127,7 @@ endif
     enddo
 
     f = 0.0d0
+    f_post = 0.0d0
     !$omp parallel do default(none) shared(f,u,v,ex,ey,omega,obst) private(i,j,alpha,us2,un)
     do j=1,ny
         do i=1,nx
@@ -136,6 +174,18 @@ endif
             f_post(alpha,i,ny+2) = omega(alpha)*rho0 
         enddo
     enddo
+    
+
+    ! determine particle masks
+    local_mask = 0
+
+    do cNum = 1, cNumMax
+        if (MOD(cNum-1, num_process) == rank) then
+            local_mask(cNum) = 1
+        endif
+    enddo
+
+
 
     return
 end subroutine initial

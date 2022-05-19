@@ -7,9 +7,10 @@ subroutine initial()
     real(8) :: us2
     integer :: cNum
 
-    
-if(rank == 0) then
+    itc = 0
+    errorU = 100.0d0
 
+    write(*,*) "    "
     write(*,*) "l0=",real(l0),"cm"
     write(*,*) "t0=",real(t0),"s"
     write(*,*) "Mesh:",nx,ny
@@ -20,60 +21,102 @@ if(rank == 0) then
     write(*,*) "tauf=",real(tauf)
     write(*,*) "gravity=",real(gravity)
     write(*,*) "    "
-    write(*,*) "wallStiff=",real(wallStiff)
-    write(*,*) "thresholdR=",real(thresholdR)
+    write(*,*) "thresholdWall=",real(thresholdWall)
+    write(*,*) "stiffWall=",real(stiffWall)
+    write(*,*) "    "
+    write(*,*) "thresholdParticle=",real(thresholdParticle)
+    write(*,*) "stiffParticle=",real(stiffParticle)
     write(*,*) "    "
 
-endif
-    
-    itc = 0
-    errorU = 100.0d0
+
+    write(*,*) "I am NOT Moving Domain >_<"
+
+
+    do i=1,nx
+        X(i) = dble(i-1)
+    enddo
+    do j=1,ny
+        Y(j) = dble(j-1) 
+    enddo
+     
+    xCenter(1) = 101.01d0
+    yCenter(1) = 720.0d0
+
+    !--------the two particles are not in the same vertical line
+    !--------P1 is left and P2 is right
+    xCenter(2) = 101.0d0
+    yCenter(2) = 680.0d0
+
+    ! xCenter(3) = 101.01d0
+    ! yCenter(3) = 20.0d0
+    ! xCenter(4) = 101.00d0
+    ! yCenter(4) = 60.0d0
+
+    xCenterOld(1) = xCenter(1)
+    xCenterOld(2) = xCenter(2)
+    yCenterOld(1) = yCenter(1)
+    yCenterOld(2) = yCenter(2)
+
+    ! xCenterOld(3) = xCenter(3)
+    ! xCenterOld(4) = xCenter(4)
+    ! yCenterOld(3) = yCenter(3)
+    ! yCenterOld(4) = yCenter(4)
 
     radius(1) = dble(radius0)
-    if(rank == 0) then
-        do cNum=1,cNumMax
-            write(*,*) "diameter=",real(2.0d0*radius(cNum))
-        enddo
-    endif
+    radius(2) = dble(radius0)
 
-    ! define mesh
-    if (rank == 0) then
-        do i=1,total_nx
-            X(i) = dble(i-1)
-        enddo
-        do j=1,total_ny
-            Y(j) = dble(j-1)
-        enddo
-    endif
-
-    xCenter(1) = 101.0d0
-    yCenter(1) = 401.0d0
+    ! radius(3) = dble(radius0)
+    ! radius(4) = dble(radius0)
+    do cNum=1,cNumMax
+        write(*,*) "I am particle ", cNum
+        write(*,*) "xCenter =", real(xCenter(cNum)), ",    yCenter =", real(yCenter(cNum))
+        write(*,*) "diameter=",real(2.0d0*radius(cNum))
+        write(*,*) "    "
+    enddo
+    
     Uc(1) = 0.0d0
     Vc(1) = 0.0d0
     rationalOmega(1) = 0.0d0
+    Uc(2) = 0.0d0
+    Vc(2) = 0.0d0
+    rationalOmega(2) = 0.0d0
+
+    ! Uc(3) = 0.0d0
+    ! Vc(3) = 0.0d0
+    ! rationalOmega(3) = 0.0d0
+    ! Uc(4) = 0.0d0
+    ! Vc(4) = 0.0d0
+    ! rationalOmega(4) = 0.0d0
+
+    UcOld(1) = Uc(1)
+    VcOld(1) = Vc(1)
+    UcOld(2) = UcOld(2)
+    VcOld(2) = VcOld(2)
+    rationalOmegaOld(1) = rationalOmega(1)
+    rationalOmegaOld(2) = rationalOmega(2)
+
+    ! UcOld(3) = Uc(3)
+    ! VcOld(3) = Vc(3)
+    ! UcOld(4) = UcOld(4)
+    ! VcOld(4) = VcOld(4)
+    ! rationalOmegaOld(3) = rationalOmega(3)
+    ! rationalOmegaOld(4) = rationalOmega(4)
 
     obst = 0
     obstNew = 0
-    rho = rho0
-    do j=0,ny+1
-        do i=0,nx+1
+    !$omp parallel do default(none) shared(obst,rho,xCenter,yCenter,radius) private(i,j,cNum)
+    do j=1,ny
+        do i=1,nx
+            rho(i,j) = rho0
             do cNum=1,cNumMax
-                ! golbal coordinate
-                if( ((i+i_start_global-xCenter(cNum))**2.0d0 + (j+j_start_global-yCenter(cNum))**2.0d0) &
-                                .LE.radius(cNum)**2.0d0 ) then 
-                    obst(i,j) = 1 ! solid node                  
+                if( ((i-xCenter(cNum))**2.0d0+(j-yCenter(cNum))**2.0d0).LE.radius(cNum)**2.0d0 ) then 
+                    obst(i,j) = 1 ! solid node
+                    rho(i,j) = rhoSolid
                 endif
             enddo
         enddo
     enddo
-
-    do j=1,ny
-        do i=1,nx
-            if( obst(i,j) == 1 ) then 
-                rho(i,j) = rhoSolid
-            endif
-        enddo
-    enddo
+    !$omp end parallel do
 
     u = 0.0d0
     v = 0.0d0
@@ -90,6 +133,7 @@ endif
     enddo
 
     f = 0.0d0
+    f_post = 0.0d0
     !$omp parallel do default(none) shared(f,u,v,ex,ey,omega,obst) private(i,j,alpha,us2,un)
     do j=1,ny
         do i=1,nx
@@ -104,7 +148,8 @@ endif
     enddo
     !$omp end parallel do
 
-    ! ghost points
+
+
     do j=-1,ny+2
         do alpha=0,8
             f(alpha,0,j) = omega(alpha)*rho0 
@@ -136,6 +181,7 @@ endif
             f_post(alpha,i,ny+2) = omega(alpha)*rho0 
         enddo
     enddo
+    
 
     return
 end subroutine initial

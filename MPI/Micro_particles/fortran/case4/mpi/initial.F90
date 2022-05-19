@@ -20,8 +20,11 @@ if(rank == 0) then
     write(*,*) "tauf=",real(tauf)
     write(*,*) "gravity=",real(gravity)
     write(*,*) "    "
-    write(*,*) "wallStiff=",real(wallStiff)
-    write(*,*) "thresholdR=",real(thresholdR)
+    write(*,*) "thresholdWall=",real(thresholdWall)
+    write(*,*) "stiffWall=",real(stiffWall)
+    write(*,*) "    "
+    write(*,*) "thresholdParticle=",real(thresholdParticle)
+    write(*,*) "stiffParticle=",real(stiffParticle)
     write(*,*) "    "
 
 endif
@@ -29,28 +32,48 @@ endif
     itc = 0
     errorU = 100.0d0
 
+    ! define mesh
+
+    do i=1,total_nx
+        X(i) = dble(i-1)
+    enddo
+    do j=1,total_ny
+        Y(j) = dble(j-1)
+    enddo
+
+    xCenter(1) = 101.01d0
+    yCenter(1) = 720.00d0
+    xCenter(2) = 101.0d0
+    yCenter(2) = 680.0d0
+
+    xCenterOld(1) = xCenter(1)
+    xCenterOld(2) = xCenter(2)
+    yCenterOld(1) = yCenter(1)
+    yCenterOld(2) = yCenter(2)
+
     radius(1) = dble(radius0)
+    radius(2) = dble(radius0)
     if(rank == 0) then
         do cNum=1,cNumMax
+            write(*,*) "I am particle ", cNum
+            write(*,*) "xCenter =", real(xCenter(cNum)), ",    yCenter =", real(yCenter(cNum))
             write(*,*) "diameter=",real(2.0d0*radius(cNum))
+            write(*,*) "    "
         enddo
     endif
 
-    ! define mesh
-    if (rank == 0) then
-        do i=1,total_nx
-            X(i) = dble(i-1)
-        enddo
-        do j=1,total_ny
-            Y(j) = dble(j-1)
-        enddo
-    endif
-
-    xCenter(1) = 101.0d0
-    yCenter(1) = 401.0d0
     Uc(1) = 0.0d0
     Vc(1) = 0.0d0
     rationalOmega(1) = 0.0d0
+    Uc(2) = 0.0d0
+    Vc(2) = 0.0d0
+    rationalOmega(2) = 0.0d0
+    UcOld(1) = Uc(1)
+    VcOld(1) = Vc(1)
+    UcOld(2) = UcOld(2)
+    VcOld(2) = VcOld(2)
+    rationalOmegaOld(1) = rationalOmega(1)
+    rationalOmegaOld(2) = rationalOmega(2)
 
     obst = 0
     obstNew = 0
@@ -75,6 +98,7 @@ endif
         enddo
     enddo
 
+
     u = 0.0d0
     v = 0.0d0
 
@@ -90,6 +114,7 @@ endif
     enddo
 
     f = 0.0d0
+    f_post = 0.0d0
     !$omp parallel do default(none) shared(f,u,v,ex,ey,omega,obst) private(i,j,alpha,us2,un)
     do j=1,ny
         do i=1,nx

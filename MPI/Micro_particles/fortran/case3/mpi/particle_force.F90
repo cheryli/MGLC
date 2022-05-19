@@ -24,9 +24,9 @@ subroutine calForce()
     ! enddo
 
     do cNum=1,cNumMax
-        force_x(cNumMax) = 0.0d0
-        force_y(cNumMax) = 0.0d0
-        torque(cNumMax) = 0.0d0
+        force_x(cNum) = 0.0d0
+        force_y(cNum) = 0.0d0
+        torque(cNum) = 0.0d0
     enddo
 
     !$omp parallel do default(none) &

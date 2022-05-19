@@ -1,69 +1,71 @@
-    module commondata
-        implicit none
-        real(8), parameter :: Pi=4.0d0*atan(1.0d0)
+module commondata
+    implicit none
+    real(8), parameter :: Pi=4.0d0*atan(1.0d0)
 
-        integer, parameter :: nx=201,ny=801
-        integer, parameter :: nxHalf=(nx-1)/2+1, nyHalf=(ny-1)/2+1
-
-        real(8), parameter :: l0=1.0d0/100.0d0 !! unit: cm
-        real(8), parameter :: t0=5.0d0/10000.0d0 !! unit: s
-        real(8), parameter :: m0=1.0d0/1000000.0d0 !! unit: g
-        real(8), parameter :: tMax=5.0d0 !! unit: s
-
-        integer :: itc
-        integer, parameter :: itc_max=INT(tMax/t0)
-        integer, parameter :: cNumMax=2
-        
-        real(8) :: xCenter(cNumMax), yCenter(cNumMax)
-        real(8) :: xCenterOld(cNumMax), yCenterOld(cNumMax) 
-        
-        real(8) :: rationalOmega(cNumMax)
-        real(8) :: rationalOmegaOld(cNumMax)
-        
-        real(8) :: Uc(cNumMax), Vc(cNumMax)
-        real(8) :: UcOld(cNumMax), VcOld(cNumMax)
-        
-        real(8), parameter :: radius0=20.0d0/2.0d0
-        real(8) :: radius(cNumMax)
-        real(8), parameter :: rho0=1.0d0
-        real(8), parameter :: rhoSolid=1.01d0
-        real(8) :: rhoAvg
-
-        real(8), parameter :: viscosity=0.05d0
-        real(8), parameter :: tauf=3.0d0*viscosity+0.5d0
-        real(8), parameter :: Snu=1.0d0/tauf, Sq=8.0d0*(2.0d0*tauf-1.0d0)/(8.0d0*tauf-1.0d0)
-
-        real(8) :: errorU
-        real(8), parameter :: eps=1e-6
-        real(8) :: X(nx), Y(ny)
-        real(8) :: u(nx,ny), v(nx,ny), rho(nx,ny)
-        real(8) :: up(nx,ny), vp(nx,ny)
-        real(8) :: f(0:8,-1:nx+2,-1:ny+2), f_post(0:8,-1:nx+2,-1:ny+2)
-        real(8) :: omega(0:8)
-        integer :: ex(0:8), ey(0:8)
-        data ex/0, 1, 0, -1,  0, 1, -1, -1,  1/
-        data ey/0, 0, 1,  0, -1, 1,  1, -1, -1/
-        integer :: obst(0:nx+1,0:ny+1)
-        integer :: obstNew(0:nx+1,0:ny+1)
-        integer :: r(1:8)
-        data r/3, 4, 1, 2, 7, 8, 5, 6/
-        
-        real(8) :: wallTotalForceX(cNumMax), wallTotalForceY(cNumMax)
-        real(8) :: totalTorque(cNumMax)
-        real(8), parameter :: gravity=980.0d0*t0**2.0d0/l0
     
-        real(8), parameter :: thresholdWall=4.0d0
-        real(8), parameter :: stiffWall=0.25d0
-        
-        real(8), parameter :: thresholdParticle=4.0d0
-        real(8), parameter :: stiffParticle=0.25d0
+    integer, parameter :: total_nx=201, total_ny=801
+    integer :: nx = total_nx, ny = total_ny
+
+    real(8), parameter :: l0=1.0d0/100.0d0 !! unit: cm
+    real(8), parameter :: t0=5.0d0/10000.0d0 !! unit: s
+    real(8), parameter :: m0=1.0d0/1000000.0d0 !! unit: g
+    real(8), parameter :: tMax=10.0d0 !! unit: s
+
+    integer :: itc
+    integer, parameter :: itc_max=INT(tMax/t0)
+    integer, parameter :: cNumMax=2
     
-        integer :: shiftTimes
-    end module commondata
+    real(8) :: xCenter(cNumMax), yCenter(cNumMax)
+    real(8) :: xCenterOld(cNumMax), yCenterOld(cNumMax) 
+    
+    real(8) :: rationalOmega(cNumMax)
+    real(8) :: rationalOmegaOld(cNumMax)
+    
+    real(8) :: Uc(cNumMax), Vc(cNumMax)
+    real(8) :: UcOld(cNumMax), VcOld(cNumMax)
+    
+    real(8), parameter :: radius0=20.0d0/2.0d0
+    real(8) :: radius(cNumMax)
+    real(8), parameter :: rho0=1.0d0
+    real(8), parameter :: rhoSolid=1.01d0
+    real(8) :: rhoAvg
 
-#define movingDomain
+    real(8), parameter :: viscosity=0.05d0
+    real(8), parameter :: tauf=3.0d0*viscosity+0.5d0
+    real(8), parameter :: Snu=1.0d0/tauf, Sq=8.0d0*(2.0d0*tauf-1.0d0)/(8.0d0*tauf-1.0d0)
 
-    program main
+    real(8) :: errorU
+    real(8), parameter :: eps=1e-6
+    real(8), allocatable :: X(:), Y(:)
+    real(8), allocatable :: u(:, :), v(:, :), rho(:, :)
+    real(8), allocatable :: up(:, :), vp(:, :)
+    real(8), allocatable :: f(:, :, :), f_post(:, :, :)
+    integer, allocatable :: obst(:, :)
+    integer, allocatable :: obstNew(:, :)
+
+
+    real(8) :: omega(0:8)
+    integer :: ex(0:8), ey(0:8)
+    data ex/0, 1, 0, -1,  0, 1, -1, -1,  1/
+    data ey/0, 0, 1,  0, -1, 1,  1, -1, -1/
+    integer :: r(1:8)
+    data r/3, 4, 1, 2, 7, 8, 5, 6/
+    
+    real(8) :: wallTotalForceX(cNumMax), wallTotalForceY(cNumMax)
+    real(8) :: totalTorque(cNumMax)
+    real(8), parameter :: gravity=980.0d0*t0**2.0d0/l0
+
+    real(8), parameter :: thresholdWall=4.0d0
+    real(8), parameter :: stiffWall=0.10d0
+    
+    real(8), parameter :: thresholdParticle=4.0d0
+    real(8), parameter :: stiffParticle=0.10d0
+
+
+end module commondata
+
+
+program main
     use omp_lib     
     use commondata
     implicit none
@@ -80,6 +82,8 @@
 #endif
     !--------------------OpenMP--------------------OpenMP--------------------OpenMP----------
 
+    call allocate_all()
+
     call initial()
     call output_Tecplot()
     
@@ -94,20 +98,22 @@
 
         call streaming()
 
+        call bounceback()
+
+        call bounceback_particle()
+
         call macro()
 
         call calForce()
         
         itc = itc+1
 
-        if(MOD(itc,2000).EQ.0) then
+        if(MOD(itc,500).EQ.0) then
             call check()
         endif
         
         if(MOD(itc,500).EQ.0) then
             call output_Tecplot()
-            write(*,*) "Cnum 1 at x = ", xCenter(1), "y = ", yCenter(1)
-            write(*,*) "Cnum 2 at x = ", xCenter(2), "y = ", yCenter(2)
         endif
 
         call updateCenter()
@@ -127,11 +133,13 @@
     itc = itc+1
     call output_Tecplot()
 
+    call free_all()
+
     stop
     end program main
 
 
-    subroutine initial()
+subroutine initial()
     use commondata
     implicit none
     integer :: i, j
@@ -160,12 +168,10 @@
     write(*,*) "thresholdParticle=",real(thresholdParticle)
     write(*,*) "stiffParticle=",real(stiffParticle)
     write(*,*) "    "
-#ifdef movingDomain
-    write(*,*) "I am Moving Domain ^_^"
-#endif
-#ifndef movingDomain
+
+
     write(*,*) "I am NOT Moving Domain >_<"
-#endif
+
 
     do i=1,nx
         X(i) = dble(i-1)
@@ -175,28 +181,33 @@
     enddo
      
     xCenter(1) = 101.01d0
-#ifdef movingDomain
-    yCenter(1) = dble(nyHalf)+40.0d0
-#endif
-#ifndef movingDomain
     yCenter(1) = 720.0d0
-#endif
+
     !--------the two particles are not in the same vertical line
     !--------P1 is left and P2 is right
     xCenter(2) = 101.0d0
-#ifdef movingDomain
-    yCenter(2) = dble(nyHalf)
-#endif
-#ifndef movingDomain
     yCenter(2) = 680.0d0
-#endif
+
+    ! xCenter(3) = 101.01d0
+    ! yCenter(3) = 20.0d0
+    ! xCenter(4) = 101.00d0
+    ! yCenter(4) = 60.0d0
+
     xCenterOld(1) = xCenter(1)
     xCenterOld(2) = xCenter(2)
     yCenterOld(1) = yCenter(1)
     yCenterOld(2) = yCenter(2)
 
+    ! xCenterOld(3) = xCenter(3)
+    ! xCenterOld(4) = xCenter(4)
+    ! yCenterOld(3) = yCenter(3)
+    ! yCenterOld(4) = yCenter(4)
+
     radius(1) = dble(radius0)
     radius(2) = dble(radius0)
+
+    ! radius(3) = dble(radius0)
+    ! radius(4) = dble(radius0)
     do cNum=1,cNumMax
         write(*,*) "I am particle ", cNum
         write(*,*) "xCenter =", real(xCenter(cNum)), ",    yCenter =", real(yCenter(cNum))
@@ -210,12 +221,27 @@
     Uc(2) = 0.0d0
     Vc(2) = 0.0d0
     rationalOmega(2) = 0.0d0
+
+    ! Uc(3) = 0.0d0
+    ! Vc(3) = 0.0d0
+    ! rationalOmega(3) = 0.0d0
+    ! Uc(4) = 0.0d0
+    ! Vc(4) = 0.0d0
+    ! rationalOmega(4) = 0.0d0
+
     UcOld(1) = Uc(1)
     VcOld(1) = Vc(1)
     UcOld(2) = UcOld(2)
     VcOld(2) = VcOld(2)
     rationalOmegaOld(1) = rationalOmega(1)
     rationalOmegaOld(2) = rationalOmega(2)
+
+    ! UcOld(3) = Uc(3)
+    ! VcOld(3) = Vc(3)
+    ! UcOld(4) = UcOld(4)
+    ! VcOld(4) = VcOld(4)
+    ! rationalOmegaOld(3) = rationalOmega(3)
+    ! rationalOmegaOld(4) = rationalOmega(4)
 
     obst = 0
     obstNew = 0
@@ -262,8 +288,41 @@
         enddo
     enddo
     !$omp end parallel do
+
+
+
+    do j=-1,ny+2
+        do alpha=0,8
+            f(alpha,0,j) = omega(alpha)*rho0 
+            f(alpha,-1,j) = omega(alpha)*rho0
+
+            f(alpha,nx+1,j) = omega(alpha)*rho0 
+            f(alpha,nx+2,j) = omega(alpha)*rho0 
+            
+            f_post(alpha,0,j) = omega(alpha)*rho0 
+            f_post(alpha,-1,j) = omega(alpha)*rho0
+
+            f_post(alpha,nx+1,j) = omega(alpha)*rho0 
+            f_post(alpha,nx+2,j) = omega(alpha)*rho0 
+        enddo
+    enddo
     
-    shiftTimes = 0
+    do i=-1,nx+2
+        do alpha=0,8
+            f(alpha,i,0) = omega(alpha)*rho0 
+            f(alpha,i,-1) = omega(alpha)*rho0
+
+            f(alpha,i,ny+1) = omega(alpha)*rho0 
+            f(alpha,i,ny+2) = omega(alpha)*rho0 
+            
+            f_post(alpha,i,0) = omega(alpha)*rho0 
+            f_post(alpha,i,-1) = omega(alpha)*rho0
+
+            f_post(alpha,i,ny+1) = omega(alpha)*rho0 
+            f_post(alpha,i,ny+2) = omega(alpha)*rho0 
+        enddo
+    enddo
+    
 
     return
     end subroutine initial
@@ -276,73 +335,8 @@
     integer :: alpha
     real(8) :: m(0:8), m_post(0:8), meq(0:8)
     real(8) :: s(0:8)
-    real(8) :: positionShift
     integer :: cNum
     
-    positionShift = 0
-#ifdef movingDomain
-    positionShift = int(nyHalf-yCenter(2))
-    if(abs(positionShift).GE.2) then
-            write(*,*) "solid particle moving too fast!!"
-            write(*,*) "positionShift=",real(nyHalf-yCenter(2))
-            write(*,*) "itc=",itc
-            call output_Tecplot()
-            stop
-    endif
-    if(positionShift.EQ.1) then
-        do cNum=1,cNumMax
-            yCenter(cNum) = yCenter(cNum)+1.0d0
-        enddo
-        shiftTimes = shiftTimes+1
-        do j=ny-1,1,-1
-            do i=1,nx
-                do alpha=0,8
-                    f(alpha,i,j+1) = f(alpha,i,j) 
-                enddo
-                u(i,j+1) = u(i,j)
-                v(i,j+1) = v(i,j)
-                rho(i,j+1) = rho(i,j)
-                obst(i,j+1) = obst(i,j)
-            enddo
-        enddo
-        j = 1
-        do i=1,nx
-            u(i,j) = 0.0d0
-            v(i,j) = 0.0d0
-            rho(i,j) = rho0
-            obst(i,j) = 0
-            do alpha=0,8
-                f(alpha,i,j) = omega(alpha)*rho0
-            enddo
-        enddo
-    elseif(positionShift.EQ.-1) then
-        do cNum=1,cNumMax
-            yCenter(cNum) = yCenter(cNum)-1.0d0
-        enddo
-        shiftTimes = shiftTimes-1
-        do j=2,ny
-            do i=1,nx
-                do alpha=0,8
-                    f(alpha,i,j-1) = f(alpha,i,j)
-                enddo
-                u(i,j-1) = u(i,j)
-                v(i,j-1) = v(i,j)
-                rho(i,j-1) = rho(i,j)
-                obst(i,j-1) = obst(i,j)
-            enddo
-        enddo
-        j = ny
-        do i=1,nx
-            u(i,j) = 0.0d0
-            v(i,j) = 0.0d0
-            rho(i,j) = rho0
-            obst(i,j) = 0
-            do alpha=0,8
-                f(alpha,i,j) = omega(alpha)*rho0
-            enddo
-        enddo
-    endif
-#endif
 
     !$omp parallel do default(none) shared(f,f_post,rho,u,v,obst) private(i,j,alpha,s,m,m_post,meq) 
     do j=1,ny
@@ -411,6 +405,45 @@
 
 
     subroutine streaming()
+        use commondata
+        implicit none
+        integer :: i, j, alpha
+        integer :: ip, jp
+        
+        ! !$omp parallel do default(none) shared(ex,ey,f,f_post,obst) private(i,j,alpha,ip,jp)
+        ! do j=1,ny
+        !     do i=1,nx
+        !         if(obst(i,j).EQ.0) then
+        !             do alpha=0,8
+        !                 ip = i+ex(alpha)
+        !                 jp = j+ey(alpha)
+    
+        !                 f(alpha,ip,jp) = f_post(alpha,i,j)
+                    
+        !             enddo
+        !         endif
+        !     enddo
+        ! enddo
+        ! !$omp end parallel do
+    
+        do j=1,ny
+            do i=1,nx
+                do alpha=0,8
+                    ip = i-ex(alpha)
+                    jp = j-ey(alpha)
+    
+                    if(obst(ip,jp).EQ.0) then
+                        f(alpha,i,j) = f_post(alpha,ip,jp)
+                    endif
+                enddo
+            enddo
+        enddo
+    
+        return
+    end subroutine streaming
+
+
+    subroutine bounceback_particle()
     use commondata
     implicit none
     integer :: i, j, alpha
@@ -421,24 +454,6 @@
     integer :: fluidNum
     real(8) :: temp1, temp2
     real(8) :: x0, y0
-
-    !$omp parallel do default(none) shared(ex,ey,f,f_post,obst) private(i,j,alpha,ip,jp)
-    do j=1,ny
-        do i=1,nx
-            if(obst(i,j).EQ.0) then
-                do alpha=0,8
-                    ip = i+ex(alpha)
-                    jp = j+ey(alpha)
-
-                    f(alpha,ip,jp) = f_post(alpha,i,j)
-                
-                enddo
-            endif
-        enddo
-    enddo
-    !$omp end parallel do
-
-    call bounceback()!!!!!!!!!!!!!
 
     rhoAvg = 0.0d0
     fluidNum = 0
@@ -454,37 +469,6 @@
     !$omp end parallel do
     rhoAvg = rhoAvg/dble(fluidNum)
     
-    do j=-1,ny+2
-        do alpha=0,8
-            f(alpha,0,j) = omega(alpha)*rho0 
-            f(alpha,-1,j) = omega(alpha)*rho0
-
-            f(alpha,nx+1,j) = omega(alpha)*rho0 
-            f(alpha,nx+2,j) = omega(alpha)*rho0 
-            
-            f_post(alpha,0,j) = omega(alpha)*rho0 
-            f_post(alpha,-1,j) = omega(alpha)*rho0
-
-            f_post(alpha,nx+1,j) = omega(alpha)*rho0 
-            f_post(alpha,nx+2,j) = omega(alpha)*rho0 
-        enddo
-    enddo
-    
-    do i=-1,nx+2
-        do alpha=0,8
-            f(alpha,i,0) = omega(alpha)*rho0 
-            f(alpha,i,-1) = omega(alpha)*rho0
-
-            f(alpha,i,ny+1) = omega(alpha)*rho0 
-            f(alpha,i,ny+2) = omega(alpha)*rho0 
-            
-            f_post(alpha,i,0) = omega(alpha)*rho0 
-            f_post(alpha,i,-1) = omega(alpha)*rho0
-
-            f_post(alpha,i,ny+1) = omega(alpha)*rho0 
-            f_post(alpha,i,ny+2) = omega(alpha)*rho0 
-        enddo
-    enddo
 
     !$omp parallel do default(none) &
     !$omp shared(ex,ey,r,omega,obst,xCenter,yCenter,rationalOmega,radius,f,f_post,Uc,Vc,rhoAvg) &
@@ -545,7 +529,7 @@ endif
     !$omp end parallel do
     
     return
-    end subroutine streaming
+    end subroutine bounceback_particle
 
 
     subroutine calQ(cNum,i,j,alpha,x0,y0,q)
@@ -610,23 +594,15 @@ endif
 
     do i=1,nx
         !Top side
-        j = ny
-        f(4,i,j) = f(4,i,j-1)  
-        f(7,i,j) = f(7,i,j-1)  
-        f(8,i,j) = f(8,i,j-1) 
+        f(4,i,ny) = f_post(2,i,ny)
+        f(7,i,ny) = f_post(5,i,ny)
+        f(8,i,ny) = f_post(6,i,ny)
 
         !Bottom side
-        j = 1
-#ifdef movingDomain
-        f(2,i,j) = f_post(4,i,j)
-        f(5,i,j) = f_post(7,i,j)
-        f(6,i,j) = f_post(8,i,j)
-#endif
-#ifndef movingDomain
-        f(2,i,j) = f(2,i,j+1)
-        f(5,i,j) = f(5,i,j+1)
-        f(6,i,j) = f(6,i,j+1)
-#endif
+        f(2,i,1) = f_post(4,i,1)
+        f(5,i,1) = f_post(7,i,1)
+        f(6,i,1) = f_post(8,i,1)
+
     enddo 
 
     return
@@ -761,6 +737,8 @@ Fyij(cNum) = Fyij(cNum)+forceScale*((dij-radius(cNum)-radius(cNum2)-thresholdPar
                     endif
                 else
                     write(*,*) 'Particle-particle interpenetration!'
+                    write(*,*) "itc=",itc," ,cNum=",cNum, cNum2
+                    call output_Tecplot()
                     stop
                 endif
             endif
@@ -768,38 +746,52 @@ Fyij(cNum) = Fyij(cNum)+forceScale*((dij-radius(cNum)-radius(cNum2)-thresholdPar
         !---------------particle-particle------------------
 
         !---------------particle-wall (spring force model)------------------
-        forceScale = Pi*radius(cNum)**2.0d0*(rhoSolid-rhoAvg)*gravity/stiffWall
-        if(xCenter(cNum).LT.(1.5d0*radius0)) then !! the cNum-th particle near left wall
-            dw = xCenter(cNum)-1.0d0
-            if(dw.GE.(radius(cNum)+thresholdWall)) then
-                Fwxij(cNum) = 0.0d0
-                Fwyij(cNum) = 0.0d0
-            elseif( (dw.LT.(radius(cNum)+thresholdWall)).AND.(dw.GE.radius(cNum)) ) then
-                Fwxij(cNum) = forceScale*((dw-thresholdWall)/thresholdWall)**2.0d0
-                Fwyij(cNum) = 0.0d0
-                if(MOD(itc,1000).EQ.0) write(*,*) "Particle-wall interaction actived (near left-wall)!"
-            else
-                write(*,*) "penetration left wall!"
-                write(*,*) "xCenter(cNum)=",real(xCenter(cNum))
-                write(*,*) "yCenter(cNum)=",real(yCenter(cNum))
-                write(*,*) "itc=",itc
-                write(*,*) "dw=",dw
-                stop
+        Fwxij(cNum) = 0.0d0
+        Fwyij(cNum) = 0.0d0
+        forceScale = Pi*radius(cNum)**2.0d0*(rhoSolid-rho0)*gravity/stiffWall
+
+        ! near the bottom wall
+        dw = yCenter(cNum)-radius(cNum)-1.0d0
+        if(dw .LT. 0) then
+            write(*,*) "WARNING: particle penetrates the bottom wall!"
+            write(*,*) "yCenter(cNum)=",yCenter(cNum)
+            write(*,*) "Error: simulation stoped!"
+            call output_Tecplot()
+            stop
+        elseif(dw .LT. thresholdWall) then
+            Fwyij(cNum) = Fwyij(cNum) + forceScale*((dw-thresholdWall)/thresholdWall)**2.0d0
+            if(MOD(itc,1000).EQ.0) then
+                    write(*,*) "Repulsive force activated (near bottom wall)!!!!!! itc=",itc
             endif
-        elseif(xCenter(cNum).GT.(dble(nx)-1.5d0*radius0)) then !! the cNum-th particle near right wall
-            dw = dble(nx)-xCenter(cNum)
-            if(dw.GE.(radius(cNum)+thresholdWall)) then
-                Fwxij(cNum) = 0.0d0
-                Fwyij(cNum) = 0.0d0
-            elseif( (dw.LT.(radius(cNum)+thresholdWall)).AND.(dw.GE.radius(cNum)) ) then
-                Fwxij(cNum) = -forceScale*((dw-thresholdWall)/thresholdWall)**2.0d0
-                Fwyij(cNum) = 0.0d0
-                if(MOD(itc,1000).EQ.0) write(*,*) "Particle-wall interaction actived (near right-wall)!"
-            else
-                write(*,*) "penetration right wall!"
-                write(*,*) "xCenter(cNum)=",xCenter(cNum)
-                write(*,*) "dw=",dw
-                stop
+        endif
+
+        ! near the left wall
+        dw = xCenter(cNum)-radius(cNum)-1.0d0
+        if(dw .LT. 0) then
+            write(*,*) "WARNING: particle penetrates the left wall!"
+            write(*,*) "xCenter(cNum)=",xCenter(cNum)
+            write(*,*) "Error: simulation stoped!"
+            call output_Tecplot()
+            stop
+        elseif( dw .LT. thresholdWall ) then
+            Fwxij(cNum) = Fwxij(cNum) + forceScale*((dw-thresholdWall)/thresholdWall)**2.0d0
+            if(MOD(itc,1000).EQ.0) then
+                    write(*,*) "Repulsive force activated (near left wall)!!!!!! itc=",itc
+            endif
+        endif
+
+        ! near the right wall
+        dw = dble(nx) - xCenter(cNum) - radius(cNum)
+        if(dw .LT. 0) then  
+            write(*,*) "WARNING: particle penetrates the right wall!"
+            write(*,*) "xCenter(cNum)=",xCenter(cNum)
+            write(*,*) "Error: simulation stoped!"
+            call output_Tecplot()
+            stop
+        elseif( dw .LT. thresholdWall ) then
+            Fwxij(cNum) = Fwxij(cNum) - forceScale*((dw-thresholdWall)/thresholdWall)**2.0d0
+            if(MOD(itc,1000).EQ.0) then
+                write(*,*) "Repulsive force activated (near right wall)!!!!!! itc=",itc
             endif
         endif
         !---------------particle-wall (spring force model)------------------
@@ -880,8 +872,8 @@ Fyij(cNum) = Fyij(cNum)+forceScale*((dij-radius(cNum)-radius(cNum2)-thresholdPar
     character(len=40) :: zoneName
 
     write(B2,'(i9.9)') itc
-    open(41,file='DKT-'//B2//'.plt',form='binary')
-
+    ! open(41,file='DKT-'//B2//'.plt',form='binary')
+    open(unit=41,file='movingCylinder-'//B2//'.plt',form='unformatted')
     !---------------------------------------------
     zoneMarker= 299.0
     eohMarker = 357.0
@@ -1049,26 +1041,11 @@ Fyij(cNum) = Fyij(cNum)+forceScale*((dij-radius(cNum)-radius(cNum2)-thresholdPar
         write(01,*) itc*t0, (xCenter(cNum)-0.0d0)*l0
         close(01)
 
-#ifdef movingDomain
-        open(unit=01,file='y-'//trim(filename)//'.dat',status='unknown',position='append')
-        write(01,*) itc*t0, (yCenter(cNum)+280.0d0-shiftTimes)*l0
-        close(01)
-#endif
-#ifndef movingDomain
         open(unit=01,file='y-'//trim(filename)//'.dat',status='unknown',position='append')
         write(01,*) itc*t0, (yCenter(cNum)-0.0d0)*l0
         close(01)
-#endif
     enddo
     
-    do cNum=1,cNumMax
-        if(yCenter(cNum).LE.2.0d0*radius0) then
-            write(*,*) "ALMOST Touch the bottom!"
-            write(*,*) "cNum=",cNum,"    yCenter=", real(yCenter(cNum))
-            call output_Tecplot()
-            stop
-        endif
-    enddo
     
     distanceX = xCenter(1)-xCenter(2)
     distanceY = yCenter(1)-yCenter(2)
@@ -1192,4 +1169,48 @@ Fyij(cNum) = Fyij(cNum)+forceScale*((dij-radius(cNum)-radius(cNum2)-thresholdPar
     obst = obstNew
     
     return
-    end subroutine updateCenter
+end subroutine updateCenter
+
+
+subroutine allocate_all()
+        use commondata
+    
+        allocate(X(total_nx))
+        allocate(Y(total_ny))
+        
+        allocate(u(nx,ny))
+        allocate(v(nx,ny))
+        allocate(rho(nx,ny))
+        allocate(up(nx,ny))
+        allocate(vp(nx,ny))
+    
+        allocate(obst(0:nx+1, 0:ny+1))
+        allocate(obstNew(0:nx+1, 0:ny+1))
+    
+        allocate(f(0:8, -2:nx+3, -2:ny+3))
+        allocate(f_post(0:8, -1:nx+2, -1:ny+2))
+    
+end subroutine allocate_all    
+    
+    
+    
+subroutine free_all()
+        use commondata
+        implicit none
+    
+        deallocate(X)
+        deallocate(Y)
+    
+        deallocate(u)
+        deallocate(v)
+        deallocate(rho)
+        deallocate(up)
+        deallocate(vp)
+    
+        deallocate(f)
+        deallocate(f_post)
+    
+        deallocate(obst)
+        deallocate(obstNew)
+    
+end subroutine free_all
