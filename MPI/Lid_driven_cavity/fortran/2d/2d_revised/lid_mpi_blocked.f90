@@ -719,7 +719,7 @@ subroutine output_Tecplot(xp, yp, u, v, rho, stream, vorticity, nx, ny, itc)
     
     write(B2,'(i9.9)') itc
 
-    open(41,file='MRTcavity-'//B2//'.plt',form='binary')
+    open(41,file='MRTcavity-'//B2//'.plt', access='stream', form='unformatted')
     !---------------------------------------------
     zoneMarker= 299.0
     eohMarker = 357.0

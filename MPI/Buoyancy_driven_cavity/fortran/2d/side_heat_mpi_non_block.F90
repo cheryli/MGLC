@@ -1741,7 +1741,7 @@ subroutine output_Tecplot(xp, yp, u, v, rho, T, stream, vorticity, nx, ny, itc)
 #endif
     filename = adjustl(filename)
     
-    open(unit=41,file=trim(pltFolderPrefix)//"-"//trim(filename)//'.plt',form='binary')
+    open(unit=41,file=trim(pltFolderPrefix)//"-"//trim(filename)//'.plt', access='stream', form='unformatted')
 
     !---------------------------------------------
     zoneMarker= 299.0

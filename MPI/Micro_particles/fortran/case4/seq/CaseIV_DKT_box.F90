@@ -873,7 +873,7 @@ Fyij(cNum) = Fyij(cNum)+forceScale*((dij-radius(cNum)-radius(cNum2)-thresholdPar
 
     write(B2,'(i9.9)') itc
     ! open(41,file='DKT-'//B2//'.plt',form='binary')
-    open(unit=41,file='movingCylinder-'//B2//'.plt',form='unformatted')
+    open(unit=41,file='movingCylinder-'//B2//'.plt', access='stream', form='unformatted')
     !---------------------------------------------
     zoneMarker= 299.0
     eohMarker = 357.0

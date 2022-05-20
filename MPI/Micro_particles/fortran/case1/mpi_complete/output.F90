@@ -116,8 +116,7 @@ subroutine output_Tecplot(xp, yp, u, v, rho, nx, ny, itc)
     
 
     write(B2,'(i9.9)') itc
-    open(unit=41,file='movingCylinder-'//B2//'.plt',form='binary')
-    ! open(unit=41,file='movingCylinder-'//B2//'.plt',form='unformatted')
+    open(unit=41,file='movingCylinder-'//B2//'.plt', access='stream', form='unformatted')
     !---------------------------------------------
     zoneMarker= 299.0
     eohMarker = 357.0

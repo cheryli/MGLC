@@ -1215,7 +1215,7 @@ close(00)
 #endif
     filename = adjustl(filename)
 
-    open(41,file=trim(pltFolderPrefix)//trim(filename)//'.plt',form='binary')
+    open(41,file=trim(pltFolderPrefix)//trim(filename)//'.plt', access='stream', form='unformatted')
 
     !---------------------------------------------
     zoneMarker= 299.0

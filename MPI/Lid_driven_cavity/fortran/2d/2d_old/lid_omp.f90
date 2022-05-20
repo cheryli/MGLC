@@ -469,10 +469,10 @@
     
     write(B2,'(i9.9)') itc
 #ifdef BGK
-    open(41,file='BGKcavity-'//B2//'.plt',form='binary')
+    open(41,file='BGKcavity-'//B2//'.plt', access='stream', form='unformatted')
 #endif
 #ifdef MRT
-    open(41,file='MRTcavity-'//B2//'.plt',form='binary')
+    open(41,file='MRTcavity-'//B2//'.plt', access='stream', form='unformatted')
 #endif
     !---------------------------------------------
     zoneMarker= 299.0

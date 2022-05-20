@@ -1051,7 +1051,7 @@
     write(filename,*) itc
     filename = adjustl(filename)
 #endif
-    open(41,file='buoyancyCavity-'//trim(filename)//'.plt',form='binary')
+    open(41,file='buoyancyCavity-'//trim(filename)//'.plt', access='stream', form='unformatted')
 
     !---------------------------------------------
     zoneMarker= 299.0

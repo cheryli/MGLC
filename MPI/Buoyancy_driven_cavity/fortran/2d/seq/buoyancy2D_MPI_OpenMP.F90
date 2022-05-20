@@ -1735,7 +1735,7 @@ call MPI_SENDRECV(g_post(0,-1,iStart+1), 5*(nx+4), MPI_DOUBLE_PRECISION, leftNei
 #endif
     filename = adjustl(filename)
 
-    open(41,file='buoyancyCavity-'//trim(filename)//'.plt',form='binary')
+    open(41,file='buoyancyCavity-'//trim(filename)//'.plt', access='stream', form='unformatted')
 
     !---------------------------------------------
     zoneMarker= 299.0

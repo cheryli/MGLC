@@ -954,7 +954,7 @@ endif
     character(len=40) :: zoneName
 
     write(B2,'(i9.9)') itc
-    open(41,file='particleChannel-'//B2//'.plt',form='binary')
+    open(41,file='particleChannel-'//B2//'.plt', access='stream', form='unformatted')
 
     !---------------------------------------------
     zoneMarker= 299.0
