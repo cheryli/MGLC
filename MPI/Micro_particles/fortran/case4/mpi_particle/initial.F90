@@ -8,6 +8,8 @@ subroutine initial()
     integer :: cNum
     real(8) :: tmpx, tmpy, rdx, rdy
     integer :: particle_num, particle_start
+    integer, allocatable :: seed(:)
+    integer :: n
 
     
 if(rank == 0) then
@@ -46,6 +48,14 @@ endif
     tmpx = 25.0d0
     tmpy = 25.0d0
 
+    ! repeated pseudo-random number for debug 
+    call random_seed(size = n)
+    allocate(seed(n))
+    do i = 1, n
+      seed(i) = 1
+    enddo
+    call random_seed(put=seed)
+
     do cNum = 1, cNumMax
         call random_number(rdx)
         call random_number(rdy)
@@ -60,6 +70,8 @@ endif
             tmpy = tmpy + 50.0d0
         endif
     enddo
+
+    deallocate(seed)
 
     ! xCenter(1) = 101.01d0
     ! yCenter(1) = 720.00d0
